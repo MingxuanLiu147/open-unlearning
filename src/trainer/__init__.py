@@ -32,6 +32,12 @@ def load_trainer_args(trainer_args: DictConfig, dataset):
     trainer_args = dict(trainer_args)
     warmup_epochs = trainer_args.pop("warmup_epochs", None)
     if warmup_epochs:
+        if dataset is None:
+            raise ValueError(
+                "warmup_epochs is set but train_dataset is None. "
+                "Please check if your data mode is set correctly (e.g. mode='unlearn') "
+                "or if the dataset is loaded properly."
+            )
         batch_size = trainer_args["per_device_train_batch_size"]
         grad_accum_steps = trainer_args["gradient_accumulation_steps"]
         num_devices = torch.cuda.device_count()

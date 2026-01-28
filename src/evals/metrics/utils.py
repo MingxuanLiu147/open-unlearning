@@ -63,9 +63,9 @@ def run_batchwise_evals(model, dataloader, batch_eval_fn, batch_eval_fn_args, ev
                 model=model, batch=mini_batch, **batch_eval_fn_args
             )
             indexwise_batch_evals = dict(zip(data_indices, batch_evals))
-            assert not (
-                evals[intra_item_idx].keys() & indexwise_batch_evals.keys()
-            ), "Data indices repeated while iterating dataloader"
+            assert not (evals[intra_item_idx].keys() & indexwise_batch_evals.keys()), (
+                "Data indices repeated while iterating dataloader"
+            )
             evals[intra_item_idx] |= indexwise_batch_evals
     # evals looks like {iidx0: {idx453: {prob: 0.1, loss: 1}},
     #                   iidx1: {idx453: {prob: 0.2, loss: 2}}}
@@ -95,8 +95,8 @@ def evaluate_probability(model, batch):
     avg_losses = losses / num_token_gt
     normalized_probs = torch.exp(-avg_losses)
 
-    avg_losses = avg_losses.cpu().numpy().tolist()
-    normalized_probs = normalized_probs.cpu().numpy().tolist()
+    avg_losses = avg_losses.float().cpu().numpy().tolist()
+    normalized_probs = normalized_probs.float().cpu().numpy().tolist()
     return [
         {"prob": prob, "avg_loss": avg_loss}
         for prob, avg_loss in zip(normalized_probs, avg_losses)

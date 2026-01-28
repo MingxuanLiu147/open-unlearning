@@ -25,7 +25,9 @@ eval:
     retain_logs_path: ${retain_logs_path}
     overwrite: true
     question_key: ${question_key}
-    
+
+mode: unlearn
+
 data:
   anchor: forget
   forget:
@@ -33,11 +35,21 @@ data:
       args:
         hf_args:
           name: ${forget_split}
-  retain:
+  retain: 
     TOFU_QA_retain:
       args:
         hf_args:
           name: ${retain_split}
+  eval: #新增
+    TOFU_QA_retain:
+      handler: QADataset
+      args:
+        hf_args:
+          path: "locuslab/TOFU"
+          split: "train"
+          name: ${retain_split}
+        question_key: ${question_key}
+        answer_key: "answer"
 
 trainer:
   args:

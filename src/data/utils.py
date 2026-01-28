@@ -10,6 +10,9 @@ logger = logging.getLogger("data")
 
 
 def load_hf_dataset(path, **kwargs):
+    # Force redownload to avoid consistency check errors due to network/cache issues
+    if "download_mode" not in kwargs:
+        kwargs["download_mode"] = "force_redownload"
     dataset = datasets.load_dataset(path, **kwargs)
     return dataset
 
