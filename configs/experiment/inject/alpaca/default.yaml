@@ -1,0 +1,23 @@
+# Alpaca LoRA 微调实验配置
+
+defaults:
+  - override /model: Qwen2.5-7B-Instruct
+  - override /trainer: inject/LoRA
+  - override /data: inject
+  - override /eval: inject
+
+# 训练器参数覆盖
+trainer:
+  args:
+    num_train_epochs: 3
+    per_device_train_batch_size: 4
+    gradient_accumulation_steps: 4
+    learning_rate: 2e-4
+
+# LoRA 参数
+method_args:
+  r: 8
+  lora_alpha: 16
+  target_modules:
+    - q_proj
+    - v_proj

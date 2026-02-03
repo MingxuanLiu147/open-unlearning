@@ -1,8 +1,35 @@
+"""
+Know-Surgery 评估器注册表
+========================
+
+统一管理所有评估器：
+- Unlearning 评估：TOFUEvaluator, MUSEEvaluator
+- Editing 评估：EditReliabilityEvaluator, EditLocalityEvaluator 等
+- Injection 评估：InjectAccuracyEvaluator, InjectRetentionEvaluator
+"""
+
 from typing import Dict, Any
 from omegaconf import DictConfig
 from evals.tofu import TOFUEvaluator
 from evals.muse import MUSEEvaluator
 from evals.lm_eval import LMEvalEvaluator
+
+# Knowledge Editing 评估器
+from evals.edit import (
+    EditEvaluator,
+    EditReliabilityEvaluator,
+    EditGeneralizationEvaluator,
+    EditLocalityEvaluator,
+    EditPortabilityEvaluator,
+    EditComprehensiveEvaluator,
+)
+
+# Knowledge Injection 评估器
+from evals.inject import (
+    InjectEvaluator,
+    InjectAccuracyEvaluator,
+    InjectRetentionEvaluator,
+)
 
 EVALUATOR_REGISTRY: Dict[str, Any] = {}
 
@@ -29,7 +56,19 @@ def get_evaluators(eval_cfgs: DictConfig, **kwargs):
     return evaluators
 
 
-# Register Your benchmark evaluators
+# Register Unlearning benchmark evaluators
 _register_evaluator(TOFUEvaluator)
 _register_evaluator(MUSEEvaluator)
 _register_evaluator(LMEvalEvaluator)
+
+# Register Knowledge Editing evaluators
+_register_evaluator(EditEvaluator)
+_register_evaluator(EditReliabilityEvaluator)
+_register_evaluator(EditGeneralizationEvaluator)
+_register_evaluator(EditLocalityEvaluator)
+_register_evaluator(EditPortabilityEvaluator)
+
+# Register Knowledge Injection evaluators
+_register_evaluator(InjectEvaluator)
+_register_evaluator(InjectAccuracyEvaluator)
+_register_evaluator(InjectRetentionEvaluator)

@@ -1,0 +1,9 @@
+# 知识保持指标
+# 测试微调后原有知识是否保持
+
+knowledge_retention:
+  handler: InjectRetentionEvaluator
+  args:
+    metric_name: knowledge_retention
+    # 基准数据集（用于测试原有知识）
+    benchmark: null

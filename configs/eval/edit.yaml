@@ -1,0 +1,7 @@
+# Knowledge Editing 评估配置
+
+defaults:
+  - edit_metrics/reliability
+  - edit_metrics/generalization
+  - edit_metrics/locality
+  - edit_metrics/portability

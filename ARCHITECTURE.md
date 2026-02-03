@@ -260,7 +260,27 @@ model:
 
 - `leaderboard.md`: 方法性能排行榜
 - `benchmarks/template/`: 基准测试模板
-- `methods/`: 社区贡献的方法实现
+- `methods/`: 社区贡献的方法**复现脚本与文档**（见下方说明）
+
+#### community/methods 与主仓库 trainer 的关系
+
+`community/methods/` 下每个子目录（AltPO、CEU、PDU、SatImp、UNDIAL、WGA）**不是**独立实现，而是：
+
+1. **文档**：README 说明论文、超参、实验设置、引用
+2. **复现脚本**：`run.sh` 里调用**主仓库**的 `src/train.py`，并指定对应的 **trainer**（来自 `src/trainer/unlearn/`）
+
+对应关系示例：
+
+| community 方法 | 使用的主仓库 Trainer | 说明 |
+|----------------|----------------------|------|
+| AltPO | DPO | 用 DPO trainer + 自定义 alternate 数据 |
+| CEU | CEU | 直接对应 `src/trainer/unlearn/ceu.py` |
+| PDU | PDU | 直接对应 `src/trainer/unlearn/pdu.py` |
+| SatImp | SatImp | 直接对应 `src/trainer/unlearn/satimp.py` |
+| UNDIAL | UNDIAL | 直接对应 `src/trainer/unlearn/undial.py` |
+| WGA | WGA | 直接对应 `src/trainer/unlearn/wga.py` |
+
+因此：**算法实现都在主仓库的 `src/trainer/unlearn/`；community 只提供可复现的命令和文档。**
 
 ## 🔄 数据流和组件关系
 

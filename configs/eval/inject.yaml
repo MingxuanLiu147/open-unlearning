@@ -1,0 +1,5 @@
+# Knowledge Injection 评估配置
+
+defaults:
+  - inject_metrics/task_accuracy
+  - inject_metrics/knowledge_retention

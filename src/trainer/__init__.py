@@ -1,9 +1,21 @@
+"""
+Know-Surgery 训练器注册表
+========================
+
+统一管理所有训练器类，支持三大操作：
+- Unlearn: 知识删除（GradAscent, SimNPO, RMU 等）
+- Inject: 知识注入（LoRA, DoRA 等）
+- Edit: 知识编辑（ROME, MEMIT, MEND 等）
+"""
+
 import torch
 from typing import Dict, Any
 from omegaconf import DictConfig
 from transformers import Trainer, TrainingArguments
 
 from trainer.base import FinetuneTrainer
+
+# Unlearning 训练器
 from trainer.unlearn.grad_ascent import GradAscent
 from trainer.unlearn.grad_diff import GradDiff
 from trainer.unlearn.npo import NPO
@@ -15,6 +27,18 @@ from trainer.unlearn.ceu import CEU
 from trainer.unlearn.satimp import SatImp
 from trainer.unlearn.wga import WGA
 from trainer.unlearn.pdu import PDU
+
+# Knowledge Injection 训练器
+from trainer.inject.base import InjectTrainer
+from trainer.inject.lora import LoRATrainer
+from trainer.inject.dora import DoRATrainer
+from trainer.inject.adalora import AdaLoRATrainer
+
+# Knowledge Editing 训练器
+from trainer.edit.base import EditTrainer
+from trainer.edit.rome import ROMEEditor
+from trainer.edit.memit import MEMITEditor
+from trainer.edit.mend import MENDEditor
 
 
 import logging
@@ -105,3 +129,15 @@ _register_trainer(CEU)
 _register_trainer(SatImp)
 _register_trainer(WGA)
 _register_trainer(PDU)
+
+# Register Knowledge Injection Trainer
+_register_trainer(InjectTrainer)
+_register_trainer(LoRATrainer)
+_register_trainer(DoRATrainer)
+_register_trainer(AdaLoRATrainer)
+
+# Register Knowledge Editing Trainer
+_register_trainer(EditTrainer)
+_register_trainer(ROMEEditor)
+_register_trainer(MEMITEditor)
+_register_trainer(MENDEditor)

@@ -1,0 +1,11 @@
+# Alpaca 微调数据集配置
+
+train:
+  Alpaca_train:
+    handler: AlpacaDataset
+    args:
+      hf_args:
+        path: "tatsu-lab/alpaca"
+        split: "train"
+      format_type: alpaca
+      max_length: 2048

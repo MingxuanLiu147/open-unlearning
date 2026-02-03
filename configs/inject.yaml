@@ -1,0 +1,15 @@
+# Know-Surgery Knowledge Injection 入口配置
+# 用于知识注入（微调）任务，支持 LoRA, DoRA 等参数高效方法
+
+defaults:
+  - model: Qwen2.5-7B-Instruct
+  - trainer: inject/LoRA
+  - data: inject
+  - collator: DataCollatorForSupervisedDataset
+  - eval: inject
+  - hydra: default
+  - paths: default
+  - experiment: null
+
+# 训练模式
+mode: inject

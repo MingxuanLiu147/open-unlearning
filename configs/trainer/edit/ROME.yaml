@@ -1,0 +1,22 @@
+# ROME 知识编辑配置
+# Rank-One Model Editing
+
+defaults:
+  - base_editor
+
+handler: ROMEEditor
+
+method_args:
+  # 编辑层（ROME 通常编辑单层）
+  layers: [5]
+  
+  # Value 优化参数
+  v_lr: 0.5
+  v_num_grad_steps: 20
+  
+  # 正则化参数
+  clamp_norm_factor: 4.0
+  kl_factor: 0.0625
+  
+  # 二阶矩估计权重
+  mom2_update_weight: 4000.0

@@ -1,0 +1,8 @@
+# 微调任务准确率指标
+
+task_accuracy:
+  handler: InjectAccuracyEvaluator
+  args:
+    metric_name: task_accuracy
+    # 评估方法
+    eval_method: generation  # generation | perplexity

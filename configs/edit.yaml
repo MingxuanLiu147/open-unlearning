@@ -1,0 +1,18 @@
+# Know-Surgery Knowledge Editing 入口配置
+# 用于知识编辑任务，支持 ROME, MEMIT, MEND 等方法
+
+defaults:
+  - model: Qwen2.5-7B-Instruct
+  - trainer: edit/ROME
+  - data: edit
+  - collator: DataCollatorForSupervisedDataset
+  - eval: edit
+  - hydra: default
+  - paths: default
+  - experiment: null
+
+# 训练模式
+mode: edit
+
+# 编辑配置
+edit_type: single  # single | batch | sequential

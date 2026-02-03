@@ -1,0 +1,16 @@
+# MEND 元学习知识编辑配置
+# Model Editor Networks with Gradient Decomposition
+
+defaults:
+  - base_editor
+
+handler: MENDEditor
+
+method_args:
+  # 编辑层
+  layers: [5, 6, 7]
+  
+  # 编辑网络参数
+  edit_lr: 1e-4
+  n_hidden: 128
+  rank: 1920

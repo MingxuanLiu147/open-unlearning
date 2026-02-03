@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
-
+#把项目打包成一个包
 # Read dependencies from requirements.txt
 with open("requirements.txt") as f:
     requirements = f.read().splitlines()

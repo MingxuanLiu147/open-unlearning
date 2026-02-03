@@ -4,12 +4,16 @@ import numpy as np
 import logging
 from typing import List, Dict, Any, Union
 
-IGNORE_INDEX = -100  # TODO put in common constants
+IGNORE_INDEX = -100  # 训练中不计算损失的位置统一用 -100（与 Transformers 默认约定保持一致）
 
 logger = logging.getLogger("data")
 
 
 def load_hf_dataset(path, **kwargs):
+    """封装 datasets.load_dataset 的简单辅助函数。
+
+    这里默认开启 force_redownload，以避免部分环境下 cache 校验失败的问题。
+    """
     # Force redownload to avoid consistency check errors due to network/cache issues
     if "download_mode" not in kwargs:
         kwargs["download_mode"] = "force_redownload"
@@ -46,11 +50,15 @@ def preprocess_chat_instance(
     Returns:
         Dict[str, torch.Tensor]: A dictionary containing 'input_ids', 'labels', and 'attention_mask' tensors for model input.
     """
+    # prompt / response 必须成对出现（包括 few-shot 情况）
     assert len(prompt_msgs) == len(response_msgs)
     if isinstance(prompt_msgs, str):
         assert isinstance(response_msgs, str)
         prompt_msgs, response_msgs = [prompt_msgs], [response_msgs]
 
+    # 分两种模式：
+    # 1）使用 tokenizer.apply_chat_template（推荐，适配 Llama 等 chat 模型）
+    # 2）手工拼接 user/asst 起止 tag
     if template_config["apply_chat_template"]:
         chat = []
         system_prompt = template_config.get("system_prompt", None)
@@ -59,19 +67,24 @@ def preprocess_chat_instance(
         for prompt, response in zip(prompt_msgs, response_msgs):
             chat += [{"role": "user", "content": prompt}]
             chat += [{"role": "assistant", "content": response}]
+        # 某些模板会使用日期信息（可选）
         date_str = template_config.get("date_string", None)
         date_info = {"date_string": date_str} if date_str is not None else {}
+        # chat_ids：完整对话（包括最后一条 assistant 回复），用于训练或作为 labels
         chat_ids = tokenizer.apply_chat_template(
             chat, tokenize=True, add_generation_prompt=False, **date_info
         )
         # all except last response are in-context examples
+        # wrapped_prompt：只包含到“最后一条 user 提示”为止的文本，用于构造 prompt_ids
         wrapped_prompt = tokenizer.apply_chat_template(
             chat[:-1], tokenize=False, add_generation_prompt=True, **date_info
         )
+        # prompt_ids：只包含前面（包括 few-shot + 最后一条 user）的 token id
         prompt_ids = tokenizer.apply_chat_template(
             chat[:-1], tokenize=True, add_generation_prompt=True, **date_info
         )
     else:
+        # 不使用内置 chat_template，手动按照自定义模板拼接
         wrapped_prompt = ""
         system_prompt_with_special_tokens = template_config.get(
             "system_prompt_with_special_tokens", None
@@ -92,6 +105,7 @@ def preprocess_chat_instance(
             )
 
         # add actual example
+        # 最后一对是“真正要训练/评估”的 QA，其余视为 in-context 示例
         final_prompt, final_response = prompt_msgs[-1], response_msgs[-1]
         wrapped_prompt += (
             template_config["user_start_tag"]
@@ -99,6 +113,7 @@ def preprocess_chat_instance(
             + template_config["user_end_tag"]
             + template_config["asst_start_tag"]
         )
+        # chat_ids：完整对话（prompt + response）
         chat_ids = tokenizer(
             wrapped_prompt + final_response,
             add_special_tokens=True,
@@ -106,6 +121,7 @@ def preprocess_chat_instance(
             truncation=True,
         )["input_ids"]
 
+        # prompt_ids：只有 prompt 部分，用于决定 labels 中哪一部分需要参与损失
         prompt_ids = tokenizer(
             wrapped_prompt,
             add_special_tokens=True,
@@ -113,6 +129,7 @@ def preprocess_chat_instance(
             truncation=True,
         )["input_ids"]
 
+    # 确保以 EOS 结尾，便于模型学习停止位置
     if chat_ids[-1] != tokenizer.eos_token_id:
         chat_ids += [tokenizer.eos_token_id]
 
@@ -123,6 +140,7 @@ def preprocess_chat_instance(
         item["input_ids"] = prompt_ids
         labels = chat_ids  # contains the entire conversation
     else:
+        # 训练模式：input_ids = 完整对话；labels 只在“答案 token”上计算损失
         item["input_ids"] = chat_ids
         labels = [IGNORE_INDEX] * len_matched + chat_ids[len_matched:]
         if len(prompt_ids) == len(chat_ids):
@@ -166,29 +184,35 @@ def preprocess_pretraining_instance(
     Returns:
         Dict[str, torch.Tensor]: A dictionary containing 'input_ids', 'labels', and 'attention_mask' tensors for model input.
     """
+    # 将 prefix + text_content 拼成一段长文本后一次性 tokenize
     full_seq_ids = tokenizer(
         prefix + (" " if insert_space else "") + text_content, add_special_tokens=True
     )["input_ids"]
+    # prefix 单独 tokenize，用于确定前缀长度
     prefix_ids = tokenizer(prefix, add_special_tokens=True)["input_ids"]
     prefix_len = len(prefix_ids)
+    # 手动截断：只保留 prefix_len + max_length 长度，避免超长
     full_seq_ids = full_seq_ids[: prefix_len + max_length]  # manual truncation
 
     len_matched = prefix_len
     if len_matched == 0:  # never give loss on index 0, when prefix is empty
         len_matched = 1
+    # prefix 部分全部置为 IGNORE_INDEX，只在正文部分计算损失
     labels = [IGNORE_INDEX] * len_matched + full_seq_ids[len_matched:]
     item = {}
     if predict_with_generate:
         item["input_ids"] = prefix_ids
     else:
+        # 训练模式：input_ids 是整段序列
         item["input_ids"] = full_seq_ids
     item["labels"] = labels
     item["attention_mask"] = [1] * len(item["input_ids"])
+    # 转成 torch.Tensor，方便 DataCollator 后续堆叠
     for attr in item:
         item[attr] = torch.tensor(item[attr])
     return item
 
-
+# 为 HF Dataset 添加一个自增 index 列，便于在训练/评测阶段追踪样本来源
 def add_dataset_index(dataset):
     indexing = np.arange(len(dataset))
     dataset = dataset.add_column("index", indexing)
