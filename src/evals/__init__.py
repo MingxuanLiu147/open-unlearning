@@ -67,6 +67,7 @@ _register_evaluator(EditReliabilityEvaluator)
 _register_evaluator(EditGeneralizationEvaluator)
 _register_evaluator(EditLocalityEvaluator)
 _register_evaluator(EditPortabilityEvaluator)
+_register_evaluator(EditComprehensiveEvaluator)
 
 # Register Knowledge Injection evaluators
 _register_evaluator(InjectEvaluator)

@@ -79,7 +79,7 @@ CUDA_VISIBLE_DEVICES=4 python src/eval.py \
     forget_split=forget10 \
     holdout_split=holdout10 \
     model=Llama-3.2-1B-Instruct \
-    task_name=my_simnpo_experiment \
+    task_name=my_simnpo_experiment_2.6 \
     model.model_args.pretrained_model_name_or_path=saves/unlearn/my_simnpo_experiment \
     paths.output_dir=saves/unlearn/my_simnpo_experiment/evals
 ```

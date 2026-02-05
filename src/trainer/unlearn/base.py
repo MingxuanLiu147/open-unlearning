@@ -36,8 +36,24 @@ if is_deepspeed_available():
 
 
 class UnlearnTrainer(FinetuneTrainer):
+    """
+    遗忘学习 (Unlearning) 基础训练器，继承自 FinetuneTrainer。
+
+    主要针对 Unlearning 任务的特殊需求进行了适配：
+    1. DeepSpeed 配置适配：处理 Reference Model 或其他辅助模型在 DeepSpeed 环境下的初始化。
+    2. 评估逻辑修正：在评估 (prediction_step) 时强制使用标准 Loss，而非训练时的 Unlearning Loss。
+    """
+
     # Adapted from Huggingface DPO Trainer: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
     def _prepare_deepspeed(self, model):
+        """
+        为给定的模型准备 DeepSpeed 配置并初始化。
+
+        作用：
+        - 确保辅助模型 (如 Reference Model) 能正确加载到 DeepSpeed 环境中。
+        - 针对 ZeRO-3 优化配置 (bucket size 等)，避免显存碎片或通信效率问题。
+        - 如果不是 ZeRO-3，则强制使用 Stage 0 (禁用 ZeRO 分片)，通常用于 Reference Model 以便快速推理。
+        """
         # Adapted from accelerate: https://github.com/huggingface/accelerate/blob/739b135f8367becb67ffaada12fe76e3aa60fefd/src/accelerate/accelerator.py#L1473
         deepspeed_plugin = self.accelerator.state.deepspeed_plugin
         config_kwargs = deepcopy(deepspeed_plugin.deepspeed_config)
@@ -82,6 +98,17 @@ class UnlearnTrainer(FinetuneTrainer):
         prediction_loss_only: bool,
         ignore_keys: Optional[List[str]] = None,
     ) -> Tuple[Optional[torch.Tensor], Optional[torch.Tensor], Optional[torch.Tensor]]:
+        """
+        执行单步预测/评估。
+
+        关键修改：
+        在计算 Loss 时，显式调用 super().compute_loss (即原始 Trainer 的逻辑)，而不是 self.compute_loss。
+
+        原因：
+        Unlearning 算法通常会重写 self.compute_loss 以包含遗忘损失 (如 GA, NPO 等)。
+        但在验证/评估阶段，我们需要通过标准的 CrossEntropy Loss 来衡量模型的通用性能 (Utility)，
+        而不是看遗忘损失的大小。
+        """
         """
         The only change to this function is calling the Trainer's compute_loss, as it's often overridden by unlearning methods, and we want to maintain the Trainer's evaluation setup.
         """

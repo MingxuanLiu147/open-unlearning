@@ -87,7 +87,7 @@ git commit -m "提交信息标题
 
 **提交信息示例：**
 ```bash
-git commit -m "优化显存配置并修复代码健壮性问题
+git commit -m "添加 inject 和 edit 相关模块"
 
 ### 步骤 4：拉取远程最新更改（避免冲突）
 ```bash

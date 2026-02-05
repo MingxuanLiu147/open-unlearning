@@ -32,6 +32,14 @@ def download_wmdp():
     subprocess.run(["unzip", "-P", "wmdpcorpora", zip_path, "-d", dest_dir], check=True)
 
 
+def download_tofu():
+    snapshot_download(
+        repo_id="locuslab/TOFU",
+        repo_type="dataset",
+        local_dir="data/tofu",
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description="Download and setup evaluation data.")
     parser.add_argument(
@@ -49,6 +57,11 @@ def main():
         action="store_true",
         help="Download and unzip WMDP dataset into data/wmdp",
     )
+    parser.add_argument(
+        "--tofu",
+        action="store_true",
+        help="Download TOFU dataset into data/tofu (for offline/cache)",
+    )
 
     args = parser.parse_args()
 
@@ -58,6 +71,8 @@ def main():
         download_idk_data()
     if args.wmdp:
         download_wmdp()
+    if args.tofu:
+        download_tofu()
 
 
 if __name__ == "__main__":

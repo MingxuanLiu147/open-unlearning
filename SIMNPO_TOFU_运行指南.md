@@ -48,7 +48,7 @@ CUDA_VISIBLE_DEVICES=4 HYDRA_FULL_ERROR=1 python src/train.py \
 
 ```bash
 # 在完整 TOFU 数据集上微调 LLaMA-3.2-1B（可选）
-CUDA_VISIBLE_DEVICES=4 python src/train.py \
+CUDA_VISIBLE_DEVICES=7 python src/train.py \
     --config-name=train.yaml \
     experiment=finetune/tofu/default \
     model=Llama-3.2-1B-Instruct \

@@ -36,7 +36,7 @@ TASK_NAME="tofu_${MODEL}_${FORGET_SPLIT}_${TRAINER}_v1"
 
 # 超参数（对齐论文）
 LEARNING_RATE=5e-5        # SimNPO 推荐学习率
-NUM_EPOCHS=20             # 训练轮数（论文中通常 10-20 epoch）
+NUM_EPOCHS=10            # 训练轮数（论文中通常 10-20 epoch）
 BATCH_SIZE=2              # 每卡 batch size（1B 模型在单卡上可用 2-4）
 GRAD_ACCUM=8              # 梯度累积步数（有效 batch size = 2 × 8 = 16）
 WARMUP_EPOCHS=1.0         # Warmup 轮数
