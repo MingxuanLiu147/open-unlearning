@@ -3,7 +3,10 @@
 
 knowledge_retention:
   handler: InjectRetentionEvaluator
+  output_dir: ${paths.output_dir}
+  overwrite: false
+  benchmark_data_path: null
+  original_model_path: null
   args:
     metric_name: knowledge_retention
-    # 基准数据集（用于测试原有知识）
-    benchmark: null
+    max_new_tokens: 50

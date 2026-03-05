@@ -1,0 +1,85 @@
+Defaulting to user installation because normal site-packages is not writeable
+Looking in indexes: https://pypi.tuna.tsinghua.edu.cn/simple
+Collecting gradio
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/3f/6e/c0726e138f64cd98379a7bf95f4f3b15dd5a9f004b172540cee5653ec820/gradio-4.44.1-py3-none-any.whl (18.1 MB)
+Requirement already satisfied: pydantic>=2.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (2.10.5)
+Requirement already satisfied: pyyaml<7.0,>=5.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (6.0.2)
+Requirement already satisfied: matplotlib~=3.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (3.9.4)
+Requirement already satisfied: typer<1.0,>=0.12 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (0.15.1)
+Requirement already satisfied: importlib-resources<7.0,>=1.3 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (6.5.2)
+Collecting gradio-client==1.3.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/de/fe/7e9cb4d0e6aa74268fa31089189e4855882a0f2a36c45d359336946d4ae1/gradio_client-1.3.0-py3-none-any.whl (318 kB)
+Requirement already satisfied: numpy<3.0,>=1.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (2.0.2)
+Collecting fastapi<1.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/1a/08/3953db1979ea131c68279b997c6465080118b407f0800445b843f8e164b3/fastapi-0.128.1-py3-none-any.whl (103 kB)
+Requirement already satisfied: huggingface-hub>=0.19.3 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (0.27.1)
+Collecting semantic-version~=2.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/6a/23/8146aad7d88f4fcb3a6218f41a60f6c2d4e3a72de72da1825dc7c8f7877c/semantic_version-2.10.0-py2.py3-none-any.whl (15 kB)
+Collecting orjson~=3.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/32/a2/88e482eb8e899a037dcc9eff85ef117a568e6ca1ffa1a2b2be3fcb51b7bb/orjson-3.11.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (138 kB)
+Collecting urllib3~=2.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/39/08/aaaad47bc4e9dc8c725e68f9d04865dbcb2052843ff09c97b08904852d84/urllib3-2.6.3-py3-none-any.whl (131 kB)
+Collecting uvicorn>=0.14.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/6b/25/db2b1c6c35bf22e17fe5412d2ee5d3fd7a20d07ebc9dac8b58f7db2e23a0/uvicorn-0.39.0-py3-none-any.whl (68 kB)
+Requirement already satisfied: packaging in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (24.2)
+Requirement already satisfied: typing-extensions~=4.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (4.12.2)
+Requirement already satisfied: httpx>=0.24.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (0.28.1)
+Collecting python-multipart>=0.0.9
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/45/58/38b5afbc1a800eeea951b9285d3912613f2603bdf897a4ab0f4bd7f405fc/python_multipart-0.0.20-py3-none-any.whl (24 kB)
+Collecting tomlkit==0.12.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/68/4f/12207897848a653d03ebbf6775a29d949408ded5f99b2d87198bc5c93508/tomlkit-0.12.0-py3-none-any.whl (37 kB)
+Collecting aiofiles<24.0,>=22.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/c5/19/5af6804c4cc0fed83f47bff6e413a98a36618e7d40185cd36e69737f3b0e/aiofiles-23.2.1-py3-none-any.whl (15 kB)
+Requirement already satisfied: jinja2<4.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (3.1.5)
+Collecting ffmpy
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/55/56/dd3669eccebb6d8ac81e624542ebd53fe6f08e1b8f2f8d50aeb7e3b83f99/ffmpy-1.0.0-py3-none-any.whl (5.6 kB)
+Collecting pydub
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/a6/53/d78dc063216e62fc55f6b2eebb447f6a4b0a59f55c8406376f76bf959b08/pydub-0.25.1-py2.py3-none-any.whl (32 kB)
+Requirement already satisfied: pandas<3.0,>=1.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (2.3.1)
+Collecting markupsafe~=2.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/5f/5a/360da85076688755ea0cceb92472923086993e86b5613bbae9fbc14136b0/MarkupSafe-2.1.5-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (25 kB)
+Collecting ruff>=0.2.2
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/8a/d9/0e3a81467a120fd265658d127db648e4d3acfe3e4f6f5d4ea79fac47e587/ruff-0.15.0-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (11.1 MB)
+Requirement already satisfied: anyio<5.0,>=3.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (4.7.0)
+Requirement already satisfied: pillow<11.0,>=8.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio) (10.2.0)
+Requirement already satisfied: fsspec in /home/liumingxuan/.local/lib/python3.9/site-packages (from gradio-client==1.3.0->gradio) (2024.12.0)
+Collecting websockets<13.0,>=10.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/06/dd/e8535f54b4aaded1ed44041ca8eb9de8786ce719ff148b56b4a903ef93e6/websockets-12.0-cp39-cp39-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl (130 kB)
+Requirement already satisfied: exceptiongroup>=1.0.2 in /home/liumingxuan/.local/lib/python3.9/site-packages (from anyio<5.0,>=3.0->gradio) (1.2.2)
+Requirement already satisfied: sniffio>=1.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from anyio<5.0,>=3.0->gradio) (1.3.1)
+Requirement already satisfied: idna>=2.8 in /opt/anaconda3/lib/python3.9/site-packages (from anyio<5.0,>=3.0->gradio) (3.3)
+Collecting starlette<0.51.0,>=0.40.0
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/a3/e0/021c772d6a662f43b63044ab481dc6ac7592447605b5b35a957785363122/starlette-0.49.3-py3-none-any.whl (74 kB)
+Collecting annotated-doc>=0.0.2
+  Downloading https://pypi.tuna.tsinghua.edu.cn/packages/1e/d3/26bf1008eb3d2daa8ef4cacc7f3bfdc11818d111f7e2d0201bc6e3b49d45/annotated_doc-0.0.4-py3-none-any.whl (5.3 kB)
+Requirement already satisfied: certifi in /opt/anaconda3/lib/python3.9/site-packages (from httpx>=0.24.1->gradio) (2021.10.8)
+Requirement already satisfied: httpcore==1.* in /home/liumingxuan/.local/lib/python3.9/site-packages (from httpx>=0.24.1->gradio) (1.0.7)
+Requirement already satisfied: h11<0.15,>=0.13 in /home/liumingxuan/.local/lib/python3.9/site-packages (from httpcore==1.*->httpx>=0.24.1->gradio) (0.14.0)
+Requirement already satisfied: filelock in /home/liumingxuan/.local/lib/python3.9/site-packages (from huggingface-hub>=0.19.3->gradio) (3.16.1)
+Requirement already satisfied: tqdm>=4.42.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from huggingface-hub>=0.19.3->gradio) (4.66.4)
+Requirement already satisfied: requests in /home/liumingxuan/.local/lib/python3.9/site-packages (from huggingface-hub>=0.19.3->gradio) (2.32.3)
+Requirement already satisfied: zipp>=3.1.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from importlib-resources<7.0,>=1.3->gradio) (3.21.0)
+Requirement already satisfied: python-dateutil>=2.7 in /home/liumingxuan/.local/lib/python3.9/site-packages (from matplotlib~=3.0->gradio) (2.9.0.post0)
+Requirement already satisfied: fonttools>=4.22.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from matplotlib~=3.0->gradio) (4.59.0)
+Requirement already satisfied: contourpy>=1.0.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from matplotlib~=3.0->gradio) (1.3.0)
+Requirement already satisfied: kiwisolver>=1.3.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from matplotlib~=3.0->gradio) (1.4.7)
+Requirement already satisfied: pyparsing>=2.3.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from matplotlib~=3.0->gradio) (3.2.3)
+Requirement already satisfied: cycler>=0.10 in /home/liumingxuan/.local/lib/python3.9/site-packages (from matplotlib~=3.0->gradio) (0.12.1)
+Requirement already satisfied: tzdata>=2022.7 in /home/liumingxuan/.local/lib/python3.9/site-packages (from pandas<3.0,>=1.0->gradio) (2025.2)
+Requirement already satisfied: pytz>=2020.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from pandas<3.0,>=1.0->gradio) (2025.2)
+Requirement already satisfied: pydantic-core==2.27.2 in /home/liumingxuan/.local/lib/python3.9/site-packages (from pydantic>=2.0->gradio) (2.27.2)
+Requirement already satisfied: annotated-types>=0.6.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from pydantic>=2.0->gradio) (0.7.0)
+Requirement already satisfied: six>=1.5 in /opt/anaconda3/lib/python3.9/site-packages (from python-dateutil>=2.7->matplotlib~=3.0->gradio) (1.16.0)
+Requirement already satisfied: click>=8.0.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from typer<1.0,>=0.12->gradio) (8.1.8)
+Requirement already satisfied: shellingham>=1.3.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from typer<1.0,>=0.12->gradio) (1.5.4)
+Requirement already satisfied: rich>=10.11.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from typer<1.0,>=0.12->gradio) (13.9.4)
+Requirement already satisfied: markdown-it-py>=2.2.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from rich>=10.11.0->typer<1.0,>=0.12->gradio) (3.0.0)
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /home/liumingxuan/.local/lib/python3.9/site-packages (from rich>=10.11.0->typer<1.0,>=0.12->gradio) (2.18.0)
+Requirement already satisfied: mdurl~=0.1 in /home/liumingxuan/.local/lib/python3.9/site-packages (from markdown-it-py>=2.2.0->rich>=10.11.0->typer<1.0,>=0.12->gradio) (0.1.2)
+Requirement already satisfied: charset-normalizer<4,>=2 in /opt/anaconda3/lib/python3.9/site-packages (from requests->huggingface-hub>=0.19.3->gradio) (2.0.4)
+Installing collected packages: urllib3, websockets, starlette, markupsafe, annotated-doc, uvicorn, tomlkit, semantic-version, ruff, python-multipart, pydub, orjson, gradio-client, ffmpy, fastapi, aiofiles, gradio
+  Attempting uninstall: markupsafe
+    Found existing installation: MarkupSafe 3.0.2
+    Uninstalling MarkupSafe-3.0.2:
+      Successfully uninstalled MarkupSafe-3.0.2
+Successfully installed aiofiles-23.2.1 annotated-doc-0.0.4 fastapi-0.128.1 ffmpy-1.0.0 gradio-4.44.1 gradio-client-1.3.0 markupsafe-2.1.5 orjson-3.11.5 pydub-0.25.1 python-multipart-0.0.20 ruff-0.15.0 semantic-version-2.10.0 starlette-0.49.3 tomlkit-0.12.0 urllib3-2.6.3 uvicorn-0.39.0 websockets-12.0

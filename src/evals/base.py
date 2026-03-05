@@ -16,11 +16,22 @@ class Evaluator:
     def __init__(self, name, eval_cfg, **kwargs):
         self.name = name
         self.eval_cfg = eval_cfg
-        self.metrics_cfg = self.eval_cfg.metrics
-        self.metrics = self.load_metrics(self.metrics_cfg)
-        logger.info(
-            f"Evaluations stored in the experiment directory: {self.eval_cfg.output_dir}"
+        # Some evaluator handlers (e.g. edit/inject leaf evaluators) are
+        # standalone and do not define nested `metrics` configs.
+        self.metrics_cfg = self.eval_cfg.get("metrics", {})
+        self.metrics = (
+            self.load_metrics(self.metrics_cfg)
+            if self.metrics_cfg is not None and len(self.metrics_cfg) > 0
+            else {}
         )
+        output_dir = self.eval_cfg.get("output_dir", None)
+        if output_dir is not None:
+            logger.info(f"Evaluations stored in the experiment directory: {output_dir}")
+        else:
+            logger.info(
+                f"Evaluator `{self.name}` initialized without output_dir "
+                "(standalone evaluator mode)."
+            )
 
     def get_logs_file_path(self, output_dir, suffix="EVAL"):
         """Returns the path to json file to store results.

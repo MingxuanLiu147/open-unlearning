@@ -8,6 +8,7 @@ Know-Surgery 评估器注册表
 - Injection 评估：InjectAccuracyEvaluator, InjectRetentionEvaluator
 """
 
+import logging
 from typing import Dict, Any
 from omegaconf import DictConfig
 from evals.tofu import TOFUEvaluator
@@ -32,6 +33,7 @@ from evals.inject import (
 )
 
 EVALUATOR_REGISTRY: Dict[str, Any] = {}
+logger = logging.getLogger(__name__)
 
 
 def _register_evaluator(evaluator_class):
@@ -49,8 +51,42 @@ def get_evaluator(name: str, eval_cfg: DictConfig, **kwargs):
     return eval_handler(eval_cfg, **kwargs)
 
 
+def _expand_nested_evaluator_cfgs(eval_cfgs: DictConfig):
+    """Expand one-level nested evaluator configs.
+
+    Supports config trees where top-level keys (e.g. `edit_metrics`) contain
+    multiple evaluator entries with their own `handler` fields.
+    """
+    expanded = {}
+    for eval_name, eval_cfg in eval_cfgs.items():
+        if eval_cfg.get("handler", None) is not None:
+            expanded[eval_name] = eval_cfg
+            continue
+
+        nested = {}
+        for sub_name, sub_cfg in eval_cfg.items():
+            if sub_cfg.get("handler", None) is not None:
+                nested[sub_name] = sub_cfg
+
+        if nested:
+            logger.info(
+                "No top-level handler for `%s`; expanding nested evaluators: %s",
+                eval_name,
+                ", ".join(nested.keys()),
+            )
+            for sub_name, sub_cfg in nested.items():
+                expanded[f"{eval_name}.{sub_name}"] = sub_cfg
+            continue
+
+        raise ValueError(
+            f"{eval_name} handler not set and no nested evaluator handlers found"
+        )
+    return expanded
+
+
 def get_evaluators(eval_cfgs: DictConfig, **kwargs):
     evaluators = {}
+    eval_cfgs = _expand_nested_evaluator_cfgs(eval_cfgs)
     for eval_name, eval_cfg in eval_cfgs.items():
         evaluators[eval_name] = get_evaluator(eval_name, eval_cfg, **kwargs)
     return evaluators

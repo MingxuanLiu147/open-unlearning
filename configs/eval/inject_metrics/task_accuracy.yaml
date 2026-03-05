@@ -2,7 +2,12 @@
 
 task_accuracy:
   handler: InjectAccuracyEvaluator
+  output_dir: ${paths.output_dir}
+  overwrite: false
+  eval_data_path: null
   args:
     metric_name: task_accuracy
     # 评估方法
     eval_method: generation  # generation | perplexity
+    max_new_tokens: 100
+    max_length: 2048

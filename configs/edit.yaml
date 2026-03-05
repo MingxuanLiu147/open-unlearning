@@ -2,7 +2,7 @@
 # 用于知识编辑任务，支持 ROME, MEMIT, MEND 等方法
 
 defaults:
-  - model: Qwen2.5-7B-Instruct
+  - model: Llama-3.2-3B-Instruct
   - trainer: edit/ROME
   - data: edit
   - collator: DataCollatorForSupervisedDataset

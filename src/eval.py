@@ -15,12 +15,84 @@
 - 把指标与日志逻辑集中在评估器里，入口保持简单且可预测。
 """
 
+import json
+import logging
+import os
+from copy import deepcopy
+
 import hydra
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf, open_dict
 
 from trainer.utils import seed_everything
 from model import get_model
 from evals import get_evaluators
+
+logger = logging.getLogger(__name__)
+
+
+def _to_plain(value):
+    if OmegaConf.is_config(value):
+        return OmegaConf.to_container(value, resolve=True)
+    return value
+
+
+def _load_structured_data(path: str):
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"Evaluation input file not found: {path}")
+    ext = os.path.splitext(path)[1].lower()
+    if ext == ".json":
+        with open(path, "r") as f:
+            return json.load(f)
+    if ext == ".jsonl":
+        with open(path, "r") as f:
+            return [json.loads(line) for line in f if line.strip()]
+    if ext in {".yaml", ".yml"}:
+        return OmegaConf.to_container(OmegaConf.load(path), resolve=True)
+    raise ValueError(
+        f"Unsupported evaluation input format for {path}. "
+        "Use .json/.jsonl/.yaml/.yml."
+    )
+
+
+def _get_optional_evaluator_input(eval_cfg: DictConfig, key: str):
+    value = eval_cfg.get(key, None)
+    if value is not None:
+        return _to_plain(value)
+    path = eval_cfg.get(f"{key}_path", None)
+    if path is None:
+        return None
+    return _load_structured_data(path)
+
+
+def _resolve_evaluator_runtime_args(
+    evaluator_cfg: DictConfig,
+    base_model_cfg: DictConfig,
+    original_model_cache: dict,
+):
+    runtime_args = {}
+    for key in ("edit_data", "eval_data", "benchmark_data"):
+        value = _get_optional_evaluator_input(evaluator_cfg, key)
+        if value is not None:
+            runtime_args[key] = value
+
+    original_model = evaluator_cfg.get("original_model", None)
+    if original_model is not None:
+        runtime_args["original_model"] = original_model
+
+    original_model_path = evaluator_cfg.get("original_model_path", None)
+    if original_model_path is not None:
+        if original_model_path not in original_model_cache:
+            ref_model_cfg = deepcopy(base_model_cfg)
+            with open_dict(ref_model_cfg.model_args):
+                ref_model_cfg.model_args.pretrained_model_name_or_path = (
+                    original_model_path
+                )
+            ref_model, _ = get_model(ref_model_cfg)
+            original_model_cache[original_model_path] = ref_model
+            logger.info("Loaded original_model from %s", original_model_path)
+        runtime_args["original_model"] = original_model_cache[original_model_path]
+
+    return runtime_args
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="eval.yaml")
@@ -35,7 +107,8 @@ def main(cfg: DictConfig):
 
     # 2) 一次性加载模型与分词器并在各评估器之间共享。
     #    这样既省时，也保证评估之间的比较一致。
-    model_cfg = cfg.model
+    model_cfg = deepcopy(cfg.model)
+    base_model_cfg = deepcopy(cfg.model)
     assert model_cfg is not None, "Invalid model yaml passed in train config."
     template_args = model_cfg.template_args
     model, tokenizer = get_model(model_cfg)
@@ -54,6 +127,7 @@ def main(cfg: DictConfig):
     # 4) 执行各评估器。
     #    传入共享的运行时上下文（model/tokenizer/template_args），
     #    每个评估器会把细粒度日志与汇总结果写到各自的 output_dir。
+    original_model_cache = {}
     for evaluator_name, evaluator in evaluators.items():
         eval_args = {
             # 模板参数用于统一数据集 prompt 的格式。
@@ -61,6 +135,16 @@ def main(cfg: DictConfig):
             "model": model,
             "tokenizer": tokenizer,
         }
+        runtime_args = _resolve_evaluator_runtime_args(
+            evaluator.eval_cfg, base_model_cfg, original_model_cache
+        )
+        if runtime_args:
+            logger.info(
+                "Evaluator `%s` loaded runtime args: %s",
+                evaluator_name,
+                ", ".join(sorted(runtime_args.keys())),
+            )
+            eval_args.update(runtime_args)
         # `evaluate` 会返回摘要字典；这里不使用它，
         # 因为评估器已经将结果写入配置的 output_dir。
         _ = evaluator.evaluate(**eval_args)

@@ -26,6 +26,8 @@ class ConfigLoader:
             base_dir = Path(__file__).parent.parent.parent
             configs_dir = base_dir / "configs"
         self.configs_dir = Path(configs_dir)
+        self.project_root = self.configs_dir.parent
+        self.saves_dir = self.project_root / "saves"
         
     def _scan_yaml_files(self, subdir: str, recursive: bool = False) -> List[str]:
         """扫描子目录下的 yaml 文件
@@ -152,29 +154,31 @@ class ConfigLoader:
         """获取评测套件列表
         
         Args:
-            mode: 训练模式，用于过滤评测套件
+            mode: 训练模式，用于智能排序（推荐的套件排前面）
         """
         eval_dir = self.configs_dir / "eval"
         if not eval_dir.exists():
             return []
         
-        evals = []
+        # 扫描所有评估配置
+        all_evals = []
         for yaml_file in eval_dir.glob("*.yaml"):
-            eval_name = yaml_file.stem
-            # 根据 mode 过滤
-            if mode == "unlearn":
-                if eval_name in ["tofu", "muse", "wmdp"]:
-                    evals.append(eval_name)
-            elif mode == "edit":
-                if eval_name in ["edit"]:
-                    evals.append(eval_name)
-            elif mode == "inject":
-                if eval_name in ["inject"]:
-                    evals.append(eval_name)
-            else:
-                evals.append(eval_name)
+            all_evals.append(yaml_file.stem)
         
-        return sorted(evals)
+        # 根据模式智能排序：推荐的评估套件排在前面
+        recommended = {
+            "unlearn": ["tofu", "muse"],
+            "edit": ["edit"],
+            "inject": ["inject"],
+        }
+        
+        if mode and mode in recommended:
+            # 推荐套件在前，其他在后
+            rec_list = [e for e in recommended[mode] if e in all_evals]
+            other_list = sorted([e for e in all_evals if e not in rec_list])
+            return rec_list + other_list
+        
+        return sorted(all_evals)
     
     def get_experiments(self, mode: str = None) -> List[str]:
         """获取实验模板列表
@@ -224,7 +228,64 @@ class ConfigLoader:
         """获取某个模式的默认入口配置
         
         Args:
-            mode: 模式名 (unlearn/inject/edit)
+            mode: 模式名 (unlearn/inject/edit/eval)
         """
         config_path = self.configs_dir / f"{mode}.yaml"
         return self._load_yaml(config_path) or {}
+    
+    def get_saved_models(self) -> List[str]:
+        """获取 saves/ 目录下已保存的模型路径
+        
+        扫描 saves/unlearn/, saves/finetune/, saves/edit/ 等目录，
+        查找包含 model.safetensors 或 pytorch_model.bin 的目录
+        
+        Returns:
+            模型路径列表（相对于项目根目录）
+        """
+        saved_models = []
+        
+        if not self.saves_dir.exists():
+            return saved_models
+        
+        # 扫描的子目录
+        subdirs = ["unlearn", "finetune", "edit", "inject"]
+        
+        for subdir in subdirs:
+            subdir_path = self.saves_dir / subdir
+            if not subdir_path.exists():
+                continue
+            
+            # 遍历所有子目录
+            for model_dir in subdir_path.iterdir():
+                if not model_dir.is_dir():
+                    continue
+                
+                # 检查是否包含模型文件
+                has_model = (
+                    (model_dir / "model.safetensors").exists() or
+                    (model_dir / "pytorch_model.bin").exists() or
+                    (model_dir / "adapter_model.safetensors").exists()
+                )
+                
+                if has_model:
+                    # 返回相对路径
+                    rel_path = model_dir.relative_to(self.project_root)
+                    saved_models.append(str(rel_path))
+        
+        return sorted(saved_models)
+    
+    def get_eval_suites(self) -> List[str]:
+        """获取可用的评测套件列表（用于 eval 模式）
+        
+        Returns:
+            评测套件名列表
+        """
+        eval_dir = self.configs_dir / "eval"
+        if not eval_dir.exists():
+            return []
+        
+        suites = []
+        for yaml_file in eval_dir.glob("*.yaml"):
+            suites.append(yaml_file.stem)
+        
+        return sorted(suites)
