@@ -1,0 +1,63 @@
+{
+  "id": "edit_zsre",
+  "name": "编辑 ZsRE 事实知识",
+  "name_en": "Edit ZsRE Factual Knowledge",
+  "goal": "edit",
+  "description": "使用 ROME 方法在 ZsRE 数据集上进行事实知识编辑，精确修改模型中的特定事实记忆。",
+  "description_en": "Edit factual knowledge on ZsRE dataset using ROME method. Precisely modify specific factual memories in the model.",
+  
+  "config": {
+    "mode": "edit",
+    "model": "Qwen2.5-7B-Instruct",
+    "trainer": "edit/ROME",
+    "experiment": "edit/zsre/default",
+    "task_name": "zsre_rome_run",
+    "seed": 42,
+    "learning_rate": "5e-4",
+    "num_epochs": 1,
+    "batch_size": 1,
+    "gradient_accumulation": 1
+  },
+  
+  "supported_data_modes": ["single", "batch"],
+  "supported_input_formats": ["jsonl", "json"],
+  
+  "recommended_models": [
+    "Qwen2.5-7B-Instruct",
+    "Llama-3.1-8B-Instruct"
+  ],
+  "recommended_eval": "edit",
+  "resource_estimate": "1× A100 (40GB) · 约 30 分钟",
+  "resource_estimate_en": "1× A100 (40GB) · ~30 minutes",
+  
+  "core_overrides": {
+    "trainer": "edit/ROME",
+    "trainer.args.num_train_epochs": 1
+  },
+  
+  "constraints": [
+    "数据需要包含 prompt/subject/target_new/target_old 字段",
+    "ROME 方法对模型架构有特定要求"
+  ],
+  "constraints_en": [
+    "Data must contain prompt/subject/target_new/target_old fields",
+    "ROME method has specific model architecture requirements"
+  ],
+  
+  "risk_notes": [
+    "编辑操作是不可逆的",
+    "连续编辑可能导致模型性能下降",
+    "建议先在小规模数据上测试"
+  ],
+  "risk_notes_en": [
+    "Edit operations are irreversible",
+    "Sequential edits may degrade model performance",
+    "Test on small data first is recommended"
+  ],
+  
+  "prompt_hints": "当用户需要精确修改模型中的单个或少量事实时推荐。ROME 方法效率高，适合事实级别的编辑。",
+  "prompt_hints_en": "Recommend when user needs to precisely modify single or few facts in the model. ROME is efficient for fact-level editing.",
+  
+  "tags": ["ZsRE", "编辑", "ROME", "事实知识"],
+  "tags_en": ["ZsRE", "Edit", "ROME", "Factual Knowledge"]
+}

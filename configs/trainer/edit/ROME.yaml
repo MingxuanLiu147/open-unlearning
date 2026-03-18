@@ -2,7 +2,8 @@
 # Rank-One Model Editing
 
 defaults:
-  - base_editor
+  - edit/base_editor@_here_
+  - _self_
 
 handler: ROMEEditor
 

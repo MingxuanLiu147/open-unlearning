@@ -33,6 +33,8 @@ from trainer.inject.base import InjectTrainer
 from trainer.inject.lora import LoRATrainer
 from trainer.inject.dora import DoRATrainer
 from trainer.inject.adalora import AdaLoRATrainer
+from trainer.inject.loreft import LoReFTTrainer
+from trainer.inject.brep import BREPTrainer
 
 # Knowledge Editing 训练器
 from trainer.edit.base import EditTrainer
@@ -135,6 +137,8 @@ _register_trainer(InjectTrainer)
 _register_trainer(LoRATrainer)
 _register_trainer(DoRATrainer)
 _register_trainer(AdaLoRATrainer)
+_register_trainer(LoReFTTrainer)
+_register_trainer(BREPTrainer)
 
 # Register Knowledge Editing Trainer
 _register_trainer(EditTrainer)

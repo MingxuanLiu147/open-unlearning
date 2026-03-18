@@ -289,3 +289,68 @@ class ConfigLoader:
             suites.append(yaml_file.stem)
         
         return sorted(suites)
+
+    def get_eval_runs(self) -> Dict[str, Dict]:
+        """扫描 saves/ 目录下所有含评估结果的 run，用于 Tab 2 结果对比。
+
+        遍历 saves/{mode}/{task_name}/checkpoint-{N}/evals/*_SUMMARY.json，
+        按 "{mode}/{task_name} @ checkpoint-{N}" 组织返回值。
+
+        Returns:
+            有序字典，key 为显示标签，value 为
+            {"mode": str, "task_name": str, "checkpoint": str,
+             "checkpoint_step": int, "summary_files": List[str]}
+        """
+        from collections import defaultdict
+
+        runs: Dict[str, Dict] = {}
+
+        if not self.saves_dir.exists():
+            return runs
+
+        mode_dirs = ["unlearn", "inject", "edit", "finetune"]
+
+        for mode in mode_dirs:
+            mode_path = self.saves_dir / mode
+            if not mode_path.exists():
+                continue
+
+            for task_dir in sorted(mode_path.iterdir()):
+                if not task_dir.is_dir():
+                    continue
+                task_name = task_dir.name
+
+                for ckpt_dir in sorted(task_dir.iterdir()):
+                    if not ckpt_dir.is_dir():
+                        continue
+                    ckpt_name = ckpt_dir.name
+
+                    # 解析 checkpoint 步数，用于排序
+                    step = 0
+                    if ckpt_name.startswith("checkpoint-"):
+                        try:
+                            step = int(ckpt_name.split("-", 1)[1])
+                        except ValueError:
+                            pass
+
+                    evals_dir = ckpt_dir / "evals"
+                    if not evals_dir.exists():
+                        continue
+
+                    summary_files = sorted(str(f) for f in evals_dir.glob("*_SUMMARY.json"))
+                    if not summary_files:
+                        continue
+
+                    label = f"{mode}/{task_name} @ {ckpt_name}"
+                    runs[label] = {
+                        "mode": mode,
+                        "task_name": task_name,
+                        "checkpoint": ckpt_name,
+                        "checkpoint_step": step,
+                        "summary_files": summary_files,
+                    }
+
+        # 按 task_name + step 排序
+        return dict(
+            sorted(runs.items(), key=lambda x: (x[1]["mode"], x[1]["task_name"], x[1]["checkpoint_step"]))
+        )

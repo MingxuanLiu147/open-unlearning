@@ -151,6 +151,42 @@ class EditTrainer(FinetuneTrainer):
                 module = getattr(module, part)
         return module
 
+    def _get_layers_container(self, model: Optional[nn.Module] = None):
+        """获取模型的主干层容器。"""
+        model = model or self.model
+        for attr_name in ["model.layers", "transformer.h", "gpt_neox.layers"]:
+            try:
+                return self._get_module_by_name(model, attr_name)
+            except (AttributeError, IndexError, KeyError):
+                continue
+        return None
+
+    def _resolve_layer_indices(self, requested_layers: Optional[List[int]] = None) -> List[int]:
+        """根据模型实际深度解析可用的编辑层。
+
+        若请求层超出模型深度，则自动回退到最后一层，保证小模型联通验证可运行。
+        """
+        requested_layers = requested_layers or self.layers
+        layers = self._get_layers_container(self.model)
+        if layers is None:
+            raise ValueError("Cannot find transformer layers in model")
+
+        total_layers = len(layers)
+        valid_layers = [
+            layer_idx for layer_idx in requested_layers if 0 <= layer_idx < total_layers
+        ]
+        if valid_layers:
+            return valid_layers
+
+        fallback_layer = total_layers - 1
+        logger.warning(
+            "Requested edit layers %s exceed model depth %d; falling back to layer %d",
+            requested_layers,
+            total_layers,
+            fallback_layer,
+        )
+        return [fallback_layer]
+
     def _set_module_by_name(self, model: nn.Module, name: str, new_module: nn.Module):
         """根据名称设置模型子模块
 

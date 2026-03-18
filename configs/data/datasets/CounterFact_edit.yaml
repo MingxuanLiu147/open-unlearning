@@ -5,8 +5,5 @@ edit:
   CounterFact_edit:
     handler: CounterFactDataset
     args:
-      hf_args:
-        path: "zjunlp/KnowEdit"
-        name: "counterfact"
-        split: "train"
+      split: "train"
       max_length: 512

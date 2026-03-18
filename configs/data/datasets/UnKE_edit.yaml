@@ -1,0 +1,8 @@
+# UnKEBench 非结构化知识编辑数据集配置
+
+edit:
+  UnKE_edit:
+    handler: UnKEDataset
+    args:
+      version: "v3"
+      max_length: 768

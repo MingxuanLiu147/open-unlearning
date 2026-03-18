@@ -7,7 +7,7 @@ handler: EditTrainer
 args:
   output_dir: saves/edit/${now:%Y-%m-%d_%H-%M-%S}
   do_train: false
-  do_eval: true
+  do_eval: false
   seed: 42
   bf16: true
   per_device_eval_batch_size: 1

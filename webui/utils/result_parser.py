@@ -8,7 +8,7 @@
 import os
 import json
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 
@@ -165,6 +165,96 @@ class ResultParser:
         
         return "\n".join(lines)
     
+    @classmethod
+    def render_compare_html(cls, runs: Dict[str, List["EvalResult"]]) -> str:
+        """将多个 run 的结果渲染为横向对比 HTML 表格。
+
+        Args:
+            runs: {run_label: [EvalResult, ...]} 字典，每个 label 对应一个 checkpoint 的结果列表
+
+        Returns:
+            HTML 字符串（包含对比表格）
+        """
+        if not runs:
+            return "<p style='color:#888;'>请先选择要对比的实验 Run</p>"
+
+        # 收集所有 eval_name × metric 的并集
+        all_evals: Dict[str, set] = {}
+        for result_list in runs.values():
+            for r in result_list:
+                if r.name not in all_evals:
+                    all_evals[r.name] = set()
+                all_evals[r.name].update(r.metrics.keys())
+
+        run_labels = list(runs.keys())
+        html_parts = []
+
+        for eval_name, metric_set in sorted(all_evals.items()):
+            metrics = sorted(metric_set)
+            header_cells = "".join(
+                f"<th style='padding:8px 12px;background:#0D9488;color:white;"
+                f"font-size:0.8rem;white-space:nowrap;max-width:160px;"
+                f"overflow:hidden;text-overflow:ellipsis;' title='{lbl}'>{lbl.split('/')[-1]}</th>"
+                for lbl in run_labels
+            )
+
+            rows = []
+            for metric in metrics:
+                display = cls.METRIC_DESCRIPTIONS.get(metric, metric)
+                cells = []
+                values = []
+                for lbl in run_labels:
+                    val = None
+                    for r in runs.get(lbl, []):
+                        if r.name == eval_name and metric in r.metrics:
+                            val = r.metrics[metric]
+                            break
+                    values.append(val)
+
+                # 找最大值用于高亮（仅数值类型）
+                numeric = [v for v in values if isinstance(v, (int, float))]
+                max_val = max(numeric) if numeric else None
+
+                for val in values:
+                    if val is None:
+                        cells.append("<td style='text-align:center;color:#bbb;padding:6px 10px;'>—</td>")
+                    else:
+                        fval = cls.format_metric_value(val)
+                        is_best = isinstance(val, (int, float)) and max_val is not None and val == max_val
+                        bg = "background:#CCFBF1;" if is_best else ""
+                        fw = "font-weight:700;" if is_best else ""
+                        color = "#0F766E" if is_best else "#134E4A"
+                        cells.append(
+                            f"<td style='text-align:center;padding:6px 10px;{bg}{fw}color:{color};'>{fval}</td>"
+                        )
+
+                rows.append(
+                    f"<tr><td style='padding:6px 10px;font-size:0.85rem;color:#374151;"
+                    f"white-space:nowrap;border-right:1px solid #E5E7EB;'>{display}</td>"
+                    + "".join(cells) + "</tr>"
+                )
+
+            html_parts.append(f"""
+<div style='margin-bottom:20px;overflow-x:auto;'>
+  <div style='font-weight:700;color:#0D9488;font-size:0.95rem;margin-bottom:8px;
+              border-left:3px solid #0D9488;padding-left:8px;'>{eval_name}</div>
+  <table style='border-collapse:collapse;width:100%;font-size:0.85rem;'>
+    <thead>
+      <tr>
+        <th style='padding:8px 12px;background:#0F766E;color:white;font-size:0.8rem;
+                   text-align:left;border-right:1px solid rgba(255,255,255,0.2);'>指标</th>
+        {header_cells}
+      </tr>
+    </thead>
+    <tbody>
+      {''.join(f'<tr style="background:{"white" if i%2==0 else "#F0FDFA"};">{r[4:]}'
+               for i, r in enumerate(rows))}
+    </tbody>
+  </table>
+</div>""")
+
+        return "".join(html_parts)
+
     @classmethod
     def render_metrics_html(cls, results: List[EvalResult]) -> str:
         """将评估结果渲染为 HTML 卡片格式（用于 Gradio）

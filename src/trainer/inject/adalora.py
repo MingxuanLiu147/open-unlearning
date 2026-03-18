@@ -15,6 +15,7 @@ https://arxiv.org/abs/2303.10512
 """
 
 import logging
+import math
 from typing import Optional, List
 
 from trainer.inject.base import InjectTrainer
@@ -78,7 +79,11 @@ class AdaLoRATrainer(InjectTrainer):
         self.target_r = target_r
         self.lora_alpha = lora_alpha
         self.lora_dropout = lora_dropout
-        self.target_modules = target_modules or ["q_proj", "v_proj", "k_proj", "o_proj"]
+        self.target_modules = (
+            list(target_modules)
+            if target_modules
+            else ["q_proj", "v_proj", "k_proj", "o_proj"]
+        )
         self.tinit = tinit
         self.tfinal = tfinal
         self.deltaT = deltaT
@@ -92,6 +97,26 @@ class AdaLoRATrainer(InjectTrainer):
 
         # 应用 AdaLoRA 配置
         self._apply_adalora_config()
+
+    def _get_total_training_steps(self) -> int:
+        """为 AdaLoRA 推导总训练步数。"""
+        if getattr(self.args, "max_steps", -1) and self.args.max_steps > 0:
+            return self.args.max_steps
+
+        if self.train_dataset is None:
+            raise ValueError(
+                "AdaLoRA requires `max_steps` or a sized train_dataset to infer "
+                "`total_step`."
+            )
+
+        world_size = max(getattr(self.args, "world_size", 1), 1)
+        effective_batch = (
+            self.args.per_device_train_batch_size
+            * self.args.gradient_accumulation_steps
+            * world_size
+        )
+        steps_per_epoch = max(math.ceil(len(self.train_dataset) / effective_batch), 1)
+        return max(math.ceil(self.args.num_train_epochs * steps_per_epoch), 1)
 
     def _apply_adalora_config(self):
         """应用 AdaLoRA 配置到模型"""
@@ -114,6 +139,7 @@ class AdaLoRATrainer(InjectTrainer):
                 tinit=self.tinit,
                 tfinal=self.tfinal,
                 deltaT=self.deltaT,
+                total_step=self._get_total_training_steps(),
                 beta1=self.beta1,
                 beta2=self.beta2,
                 orth_reg_weight=self.orth_reg_weight,
@@ -134,7 +160,7 @@ class AdaLoRATrainer(InjectTrainer):
             logger.error("peft library not installed. Please run: pip install peft")
             raise
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         """计算 AdaLoRA 微调损失
 
         包含正交正则化以保持 SVD 分解的稳定性。
@@ -183,8 +209,12 @@ class AdaLoRATrainer(InjectTrainer):
                 # AdaLoRA 使用 P, Lambda, Q 分解
                 # 这里简化为检查 A 和 B 的正交性
                 if hasattr(module, "lora_E"):  # AdaLoRA 特有
-                    A = module.lora_A["default"].weight
-                    B = module.lora_B["default"].weight
+                    A = module.lora_A["default"]
+                    B = module.lora_B["default"]
+                    if hasattr(A, "weight"):
+                        A = A.weight
+                    if hasattr(B, "weight"):
+                        B = B.weight
 
                     # 计算 A^T A - I 的 Frobenius 范数
                     if A.shape[0] < A.shape[1]:

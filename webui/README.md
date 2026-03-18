@@ -34,10 +34,12 @@ python webui/app.py --port 8080
 # 创建公共链接
 python webui/app.py --share
 ```
+
+env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy -u ALL_PROXY -u NO_PROXY -u no_proxy \
+  python3 webui/app.py --port 19191
 python3 webui/app.py --port 10001
 
-export NO_PROXY=localhost,127.0.0.1,::1
-export no_proxy=localhost,127.0.0.1,::1
+ 
 ### 3. 访问界面
 
 启动后，在浏览器中打开：
@@ -46,75 +48,53 @@ export no_proxy=localhost,127.0.0.1,::1
 http://localhost:7860
 ```
 
-## 功能说明
+## 功能说明（4 个 Tab）
 
-### 任务模式
+### Tab 1: ⚙️ 配置与运行
 
-WebUI 支持四种任务模式：
+三栏布局：
 
-| 模式 | 功能 | 入口脚本 |
-|------|------|----------|
-| **Unlearn** | 知识删除/遗忘 | `train.py` |
-| **Inject** | 知识注入/微调 | `train.py` |
-| **Edit** | 知识编辑 | `train.py` |
-| **Eval** | 模型评估 | `eval.py` |
+| 左栏（任务配置） | 中栏（参数调节） | 右栏（运行控制） |
+|----------------|----------------|----------------|
+| 模式/模型/方法/数据集 | 学习率/轮数/批次等训练参数 | 命令预览、GPU 设置 |
+| 实验模板、评测套件 | 方法参数（JSON）、Override | 启动/停止、实时日志 |
+| 导入/导出配置 | — | 结果展示 |
 
-### 配置面板（左侧）
+**任务模式**：Unlearn（遗忘）· Inject（注入）· Edit（编辑）· Eval（评估）
 
-按步骤选择配置：
+### Tab 2: 📊 结果对比
 
-1. **任务模式**: 选择 Unlearn/Inject/Edit/Eval
-2. **实验模板**: 选择预设配置或自定义
-3. **模型选择**: 选择 HuggingFace 模型配置
-4. **方法选择**: 选择具体算法（如 SimNPO、LoRA、ROME 等）
-5. **数据集选择**: 根据模式选择对应数据集
-6. **评测套件**: 选择评估指标集合
-7. **运行参数**: 设置任务名称、随机种子等
+勾选多个 `saves/` 下的 checkpoint run，一键生成指标横向对比表格（最优值高亮）。
 
-### 运行面板（右侧）
+### Tab 3: 🎬 交互演示
 
-- **命令预览**: 显示等价的 CLI 命令
-- **环境配置**: 设置 CUDA 设备
-- **运行控制**: 启动/停止任务
-- **实时日志**: 显示运行输出
-- **结果展示**: 查看评估指标
+预置 Before/After 示例，直观展示 unlearn/inject/edit 效果，支持按类别筛选。
 
-### 高级参数
+### Tab 4: 🧙 智能向导
 
-展开「高级参数」可调整：
-
-- 学习率、训练轮数、批次大小等训练参数
-- 方法特定参数（JSON 格式）
-- 额外 Hydra Overrides
-
-### 导入/导出配置
-
-- **导出**: 将当前配置保存为 YAML 文件
-- **导入**: 从 YAML 文件恢复配置
+选择目标 → 自动匹配推荐 Skill 模板 → 一键应用配置到 Tab 1。
 
 ## 使用示例
 
-### 示例 1: 运行 Unlearning
+### 示例 1: 快速运行 Unlearning（向导方式）
 
-1. 选择模式: `Unlearn`
-2. 选择模型: `Qwen2.5-7B-Instruct`
-3. 选择方法: `SimNPO`
-4. 设置任务名称: `my_unlearn_exp`
-5. 点击「开始运行」
+1. 打开 Tab 4「智能向导」
+2. 选择目标「🗑️ 我想遗忘某类知识」
+3. 点击推荐模板「遗忘 TOFU 基准」
+4. 点击「⚡ 一键应用到配置页」
+5. 切换到 Tab 1，确认配置后点击「▶️ 开始运行」
 
-### 示例 2: 评估已训练模型
+### 示例 2: 手动配置运行 Unlearning
 
-1. 选择模式: `Eval`
-2. 选择评测套件: `tofu`
-3. 选择已保存模型: `saves/unlearn/my_unlearn_exp`
-4. 设置任务名称: `eval_my_model`
-5. 点击「开始运行」
+1. Tab 1 左栏：模式选 `Unlearn`，模型选 `Qwen2.5-7B-Instruct`，方法选 `SimNPO`
+2. 中栏：按需调整学习率、训练轮数
+3. 右栏：确认命令预览，设置 GPU，点击「▶️ 开始运行」
 
-### 示例 3: 查看评估结果
+### 示例 3: 多 Run 结果对比
 
-1. 在「输出目录」中输入路径: `saves/eval/eval_my_model`
-2. 点击「加载结果」
-3. 查看指标卡片
+1. 打开 Tab 2「结果对比」
+2. 勾选多个 `unlearn/my_simnpo_run_v3 @ checkpoint-N`
+3. 点击「📊 生成对比」查看指标表格
 
 ## 常见问题
 
@@ -138,14 +118,25 @@ WebUI 支持四种任务模式：
 
 ```
 webui/
-├── app.py              # 主入口
-├── components/         # UI 组件
-│   ├── config_panel.py # 配置面板
-│   ├── run_panel.py    # 运行面板
-│   └── params.py       # 参数面板
-├── utils/              # 工具模块
-│   ├── config_loader.py # 配置加载
-│   ├── runner.py       # 命令执行
-│   └── result_parser.py # 结果解析
-└── README.md           # 本文档
+├── app.py                      # 主入口（4-Tab 布局）
+├── assets/
+│   └── custom.css              # Teal 主题样式
+├── components/
+│   ├── config_panel.py         # Tab 1 左栏：任务配置
+│   ├── params.py               # Tab 1 中栏：参数调节
+│   ├── run_panel.py            # Tab 1 右栏：运行控制
+│   ├── results_compare.py      # Tab 2：结果对比
+│   ├── interactive_demo.py     # Tab 3：交互演示
+│   └── skill_wizard.py         # Tab 4：智能向导
+├── examples/
+│   └── unlearn_examples.json   # Tab 3 预置演示数据
+├── skills/
+│   ├── unlearn_tofu.json       # Tab 4 模板：遗忘 TOFU
+│   ├── unlearn_muse.json       # Tab 4 模板：遗忘 MUSE
+│   ├── inject_alpaca.json      # Tab 4 模板：注入 Alpaca
+│   └── edit_zsre.json          # Tab 4 模板：编辑 ZSRE
+└── utils/
+    ├── config_loader.py        # 配置扫描（含 get_eval_runs）
+    ├── runner.py               # 命令执行
+    └── result_parser.py        # 结果解析（含多 run 对比）
 ```

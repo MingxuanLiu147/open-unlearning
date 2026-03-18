@@ -11,10 +11,10 @@ Knowledge Injection 数据集
 - 自定义: 可配置的字段映射
 """
 
+import json
 import logging
-from typing import Dict, Any, Optional, List, Union
+from typing import Dict, Any, Optional, List
 
-import torch
 from torch.utils.data import Dataset
 from datasets import load_dataset
 
@@ -83,8 +83,6 @@ class InjectDataset(Dataset):
     ) -> List[Dict[str, Any]]:
         """加载数据"""
         if data_path:
-            import json
-
             with open(data_path, "r", encoding="utf-8") as f:
                 if data_path.endswith(".jsonl"):
                     data = [json.loads(line) for line in f]
@@ -106,13 +104,108 @@ class InjectDataset(Dataset):
         item = self.data[idx]
 
         if self.format_type == "alpaca":
-            return self._process_alpaca(item)
+            features = self._process_alpaca(item, idx)
         elif self.format_type == "sharegpt":
-            return self._process_sharegpt(item)
+            features = self._process_sharegpt(item, idx)
         else:
-            return self._process_custom(item)
+            features = self._process_custom(item)
 
-    def _process_alpaca(self, item: Dict[str, Any]) -> Dict[str, Any]:
+        sample_weight = item.get("sample_weight", item.get("weight"))
+        if sample_weight is not None:
+            try:
+                features["sample_weight"] = float(sample_weight)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(
+                    f"InjectDataset[{idx}] sample weight must be numeric, "
+                    f"got {sample_weight!r}."
+                ) from exc
+
+        return features
+
+    def _require_text_field(
+        self,
+        item: Dict[str, Any],
+        key: str,
+        idx: int,
+        *,
+        allow_empty: bool = False,
+    ) -> str:
+        """校验并返回字符串字段，尽早暴露坏样本。"""
+        if key not in item:
+            raise ValueError(
+                f"InjectDataset[{idx}] missing required field '{key}' "
+                f"for format '{self.format_type}'."
+            )
+
+        value = item[key]
+        if value is None:
+            raise ValueError(
+                f"InjectDataset[{idx}] field '{key}' is None "
+                f"for format '{self.format_type}'."
+            )
+
+        if not isinstance(value, str):
+            value = str(value)
+        value = value.strip()
+
+        if not allow_empty and not value:
+            raise ValueError(
+                f"InjectDataset[{idx}] field '{key}' is empty "
+                f"for format '{self.format_type}'."
+            )
+        return value
+
+    def _optional_text_field(self, item: Dict[str, Any], key: str) -> str:
+        value = item.get(key, "")
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            value = str(value)
+        return value.strip()
+
+    def _should_apply_chat_template(self) -> bool:
+        return bool(
+            self.tokenizer is not None
+            and self.template_args.get("apply_chat_template", False)
+            and hasattr(self.tokenizer, "apply_chat_template")
+        )
+
+    def _prepend_system_message(
+        self, messages: List[Dict[str, str]]
+    ) -> List[Dict[str, str]]:
+        system_prompt = self.template_args.get("system_prompt")
+        if not system_prompt or any(msg["role"] == "system" for msg in messages):
+            return messages
+        return [{"role": "system", "content": system_prompt}] + messages
+
+    def _render_chat_messages(
+        self, messages: List[Dict[str, str]], *, add_generation_prompt: bool
+    ) -> str:
+        try:
+            return self.tokenizer.apply_chat_template(
+                messages,
+                tokenize=False,
+                add_generation_prompt=add_generation_prompt,
+            )
+        except TypeError:
+            return self.tokenizer.apply_chat_template(messages, tokenize=False)
+
+    def _render_sharegpt_plain_messages(
+        self, messages: List[Dict[str, str]], *, add_generation_prompt: bool
+    ) -> str:
+        role_prefix = {
+            "system": "System",
+            "user": "User",
+            "assistant": "Assistant",
+        }
+        rendered = [
+            f"{role_prefix[msg['role']]}: {msg['content']}" for msg in messages
+        ]
+        if add_generation_prompt:
+            rendered.append("Assistant: ")
+        return "\n".join(rendered)
+
+    def _process_alpaca(self, item: Dict[str, Any], idx: int) -> Dict[str, Any]:
         """处理 Alpaca 格式数据
 
         Alpaca 格式：
@@ -122,9 +215,25 @@ class InjectDataset(Dataset):
             "output": "期望的输出"
         }
         """
-        instruction = item.get(self.instruction_key, "")
-        input_text = item.get(self.input_key, "")
-        output = item.get(self.output_key, "")
+        instruction = self._require_text_field(item, self.instruction_key, idx)
+        input_text = self._optional_text_field(item, self.input_key)
+        output = self._require_text_field(item, self.output_key, idx)
+
+        if self._should_apply_chat_template():
+            user_parts = [instruction]
+            if input_text:
+                user_parts.append(input_text)
+            messages = self._prepend_system_message(
+                [{"role": "user", "content": "\n\n".join(user_parts)}]
+            )
+            prompt = self._render_chat_messages(
+                messages, add_generation_prompt=True
+            )
+            full_text = self._render_chat_messages(
+                messages + [{"role": "assistant", "content": output}],
+                add_generation_prompt=False,
+            )
+            return self._tokenize(prompt, full_text)
 
         # 构造输入
         if input_text:
@@ -136,7 +245,7 @@ class InjectDataset(Dataset):
 
         return self._tokenize(prompt, full_text)
 
-    def _process_sharegpt(self, item: Dict[str, Any]) -> Dict[str, Any]:
+    def _process_sharegpt(self, item: Dict[str, Any], idx: int) -> Dict[str, Any]:
         """处理 ShareGPT 格式数据
 
         ShareGPT 格式：
@@ -148,27 +257,71 @@ class InjectDataset(Dataset):
             ]
         }
         """
-        conversations = item.get(self.conversations_key, [])
+        if self.conversations_key not in item:
+            raise ValueError(
+                f"InjectDataset[{idx}] missing required field "
+                f"'{self.conversations_key}' for format 'sharegpt'."
+            )
+        conversations = item[self.conversations_key]
+        if not isinstance(conversations, list) or not conversations:
+            raise ValueError(
+                f"InjectDataset[{idx}] field '{self.conversations_key}' must be a "
+                "non-empty list for format 'sharegpt'."
+            )
 
-        # 构造对话文本
-        prompt_parts = []
-        response_parts = []
+        normalized_messages = []
 
-        for i, turn in enumerate(conversations):
+        for turn_idx, turn in enumerate(conversations):
             role = turn.get("from", turn.get("role", ""))
             content = turn.get("value", turn.get("content", ""))
+            if not isinstance(content, str):
+                content = str(content)
+            content = content.strip()
 
             if role in ["human", "user"]:
-                prompt_parts.append(f"User: {content}")
+                normalized_messages.append({"role": "user", "content": content})
             elif role in ["gpt", "assistant"]:
-                if i == len(conversations) - 1:
-                    response_parts.append(f"Assistant: {content}")
-                else:
-                    prompt_parts.append(f"Assistant: {content}")
+                normalized_messages.append({"role": "assistant", "content": content})
+            elif role == "system":
+                normalized_messages.append({"role": "system", "content": content})
 
-        prompt = "\n".join(prompt_parts) + "\nAssistant: "
-        full_text = prompt + (
-            response_parts[0].replace("Assistant: ", "") if response_parts else ""
+            if role in ["human", "user", "gpt", "assistant", "system"] and not content:
+                raise ValueError(
+                    f"InjectDataset[{idx}] conversation turn {turn_idx} has empty "
+                    f"content for role '{role}'."
+                )
+
+        if not normalized_messages:
+            raise ValueError(
+                f"InjectDataset[{idx}] has no usable conversation turns in "
+                f"'{self.conversations_key}'."
+            )
+        if normalized_messages[-1]["role"] != "assistant":
+            raise ValueError(
+                f"InjectDataset[{idx}] ShareGPT sample must end with an assistant "
+                "message so labels can be computed."
+            )
+
+        prompt_messages = normalized_messages[:-1]
+
+        if self._should_apply_chat_template():
+            prompt = self._render_chat_messages(
+                self._prepend_system_message(prompt_messages),
+                add_generation_prompt=True,
+            )
+            full_text = self._render_chat_messages(
+                self._prepend_system_message(normalized_messages),
+                add_generation_prompt=False,
+            )
+            return self._tokenize(prompt, full_text)
+
+        prompt = self._render_sharegpt_plain_messages(
+            prompt_messages,
+            add_generation_prompt=True,
+        )
+        full_text = self._render_sharegpt_plain_messages(
+            normalized_messages,
+            add_generation_prompt=False,
         )
 
         return self._tokenize(prompt, full_text)
@@ -198,12 +351,11 @@ class InjectDataset(Dataset):
         if self.tokenizer is None:
             return {"text": full_text, "prompt": prompt}
 
-        # Tokenize 完整文本
+        # 仅做截断，padding 交给 collator，避免每条样本都补到 max_length。
         encodings = self.tokenizer(
             full_text,
             max_length=self.max_length,
             truncation=True,
-            padding="max_length",
             return_tensors="pt",
         )
 
@@ -217,18 +369,22 @@ class InjectDataset(Dataset):
             truncation=True,
             return_tensors="pt",
         )
-        prompt_len = prompt_encodings["input_ids"].shape[1]
+        prompt_len = min(prompt_encodings["input_ids"].shape[1], labels.shape[1])
 
         # 将 prompt 部分的 labels 设为 -100（不计入损失）
         labels[0, :prompt_len] = -100
 
         # Padding token 也设为 -100
-        labels[labels == self.tokenizer.pad_token_id] = -100
+        if self.tokenizer.pad_token_id is not None:
+            labels[labels == self.tokenizer.pad_token_id] = -100
 
         return {
             "input_ids": encodings["input_ids"].squeeze(0),
             "attention_mask": encodings["attention_mask"].squeeze(0),
             "labels": labels.squeeze(0),
+            "prompt_length": prompt_len,
+            "response_start": prompt_len,
+            "train_target_span": int(labels.shape[1] - prompt_len),
         }
 
 

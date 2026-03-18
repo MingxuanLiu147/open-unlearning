@@ -5,10 +5,14 @@ from trainer.inject.base import InjectTrainer
 from trainer.inject.lora import LoRATrainer
 from trainer.inject.dora import DoRATrainer
 from trainer.inject.adalora import AdaLoRATrainer
+from trainer.inject.loreft import LoReFTTrainer
+from trainer.inject.brep import BREPTrainer
 
 __all__ = [
     "InjectTrainer",
     "LoRATrainer",
     "DoRATrainer",
     "AdaLoRATrainer",
+    "LoReFTTrainer",
+    "BREPTrainer",
 ]

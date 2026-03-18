@@ -1,3 +1,8 @@
+"""通用辅助指标。
+
+这里的实现更多是对已有结果做聚合或二次打分，而不是直接对语言模型本体做传统评测。
+"""
+
 import torch
 import numpy as np
 import scipy as sc
@@ -12,12 +17,14 @@ from evals.metrics.base import unlearning_metric
 
 @unlearning_metric(name="hm_aggregate")
 def hm_aggregate(model, **kwargs):
+    """对多个前置指标的聚合值取调和平均。"""
     values = [result["agg_value"] for _, result in kwargs["pre_compute"].items()]
     return {"agg_value": sc.stats.hmean(values)}
 
 
 @unlearning_metric(name="classifier_prob")
 def classifier_prob(model, **kwargs):
+    """使用外部分类器对预生成文本进行打分。"""
     batch_size = kwargs.get("batch_size", 32)
     max_length = kwargs.get("max_length", 512)
     class_id = kwargs.get("class_id", 0)
@@ -32,6 +39,7 @@ def classifier_prob(model, **kwargs):
     ).to(device)
 
     data = kwargs["pre_compute"]["text"]["value_by_index"]
+    # 将前置指标输出整理成文本列表，供分类器按批处理。
     data_list = [
         {"text": entry[text_key], "index": int(key)} for key, entry in data.items()
     ]
@@ -58,7 +66,7 @@ def classifier_prob(model, **kwargs):
         # Run the classifier
         with torch.no_grad():
             outputs = classifier(**inputs)
-        # Convert logits to probabilities
+        # 只保留目标类别的概率，作为当前文本的评分。
         scores = F.softmax(outputs.logits, dim=-1)[:, class_id].cpu().numpy().tolist()
 
         # Map predictions to labels

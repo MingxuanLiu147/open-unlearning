@@ -117,8 +117,8 @@ class ROMEEditor(EditTrainer):
         model = self.model
         tokenizer = self.tokenizer
 
-        # 编辑第一个指定的层
-        layer_idx = self.layers[0] if self.layers else 5
+        # 编辑第一个可用层；若配置层超出模型深度则自动回退。
+        layer_idx = self._resolve_layer_indices(self.layers)[0]
 
         # 获取模型架构信息
         layer_module = self._get_layer_module(model, layer_idx)

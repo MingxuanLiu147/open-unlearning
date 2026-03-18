@@ -11,8 +11,5 @@ data:
     ZSRE_edit:
       handler: ZSREDataset
       args:
-        hf_args:
-          path: "zjunlp/KnowEdit"
-          name: "zsre"
-          split: "train"
+        split: "test"
         max_length: 512

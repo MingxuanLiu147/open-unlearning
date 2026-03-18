@@ -89,12 +89,14 @@ class MEMITEditor(EditTrainer):
             "success": True,
             "edited_count": 0,
             "metrics": {},
-            "layers_edited": self.layers,
+            "layers_edited": [],
         }
 
         try:
+            layer_indices = self._resolve_layer_indices(self.layers)
+            results["layers_edited"] = layer_indices
             # MEMIT 同时处理所有请求
-            self._apply_memit_edit(requests)
+            self._apply_memit_edit(requests, layer_indices)
             results["edited_count"] = len(requests)
         except Exception as e:
             logger.error(f"MEMIT edit failed: {e}")
@@ -102,21 +104,24 @@ class MEMITEditor(EditTrainer):
 
         return results
 
-    def _apply_memit_edit(self, requests: List[EditRequest]):
+    def _apply_memit_edit(
+        self, requests: List[EditRequest], layer_indices: List[int]
+    ):
         """应用 MEMIT 批量编辑
 
         Args:
             requests: 编辑请求列表
+            layer_indices: 已解析的可用层列表
         """
         model = self.model
         tokenizer = self.tokenizer
 
         # 1. 为每个请求收集 key 向量
-        keys_per_layer = {layer: [] for layer in self.layers}
+        keys_per_layer = {layer: [] for layer in layer_indices}
         targets = []
 
         for request in requests:
-            for layer_idx in self.layers:
+            for layer_idx in layer_indices:
                 key = self._compute_key_vector(
                     request.prompt, request.subject, layer_idx
                 )
@@ -124,7 +129,7 @@ class MEMITEditor(EditTrainer):
             targets.append(request.target_new)
 
         # 2. 计算每层的编辑更新
-        for layer_idx in self.layers:
+        for layer_idx in layer_indices:
             keys = torch.stack(keys_per_layer[layer_idx])
 
             # 计算该层的 value 向量
@@ -134,7 +139,7 @@ class MEMITEditor(EditTrainer):
             self._apply_least_squares_update(layer_idx, keys, values)
 
         logger.info(
-            f"MEMIT edit applied across layers {self.layers}: {len(requests)} requests"
+            f"MEMIT edit applied across layers {layer_indices}: {len(requests)} requests"
         )
 
     def _compute_key_vector(

@@ -1,3 +1,12 @@
+"""指标实现共享的底层工具函数。
+
+包括：
+- 批量评测与结果整理
+- token / vocab 级 logprob 计算
+- 文本生成停止条件
+- ROUGE 等辅助评测逻辑
+"""
+
 from typing import List
 from tqdm import tqdm
 from rouge_score import rouge_scorer
@@ -33,6 +42,7 @@ def dict_transpose(evals):
 
 
 def aggregate_to_1D(x):
+    """对除 batch 维之外的所有维度求均值，得到逐样本标量。"""
     return np.mean(x, axis=tuple(range(1, x.ndim)))
 
 
@@ -59,6 +69,7 @@ def run_batchwise_evals(model, dataloader, batch_eval_fn, batch_eval_fn_args, ev
             data_indices = (
                 mini_batch.pop("index").cpu().numpy().tolist()
             )  # data item indices
+            # 将 batch 级结果重新映射回原始样本索引，便于后续聚合和对齐。
             batch_evals = batch_eval_fn(
                 model=model, batch=mini_batch, **batch_eval_fn_args
             )
@@ -92,6 +103,7 @@ def evaluate_probability(model, batch):
     # agg loss across tokens
     losses = loss_function(logits.transpose(-1, -2), shifted_labels).sum(dim=-1)
     num_token_gt = (batch["labels"] != IGNORE_INDEX).sum(-1)
+    # 用平均 token loss 构造长度归一化后的样本概率，避免长答案天然更吃亏。
     avg_losses = losses / num_token_gt
     normalized_probs = torch.exp(-avg_losses)
 
@@ -140,6 +152,7 @@ def tokenwise_logprobs(model, batch, grad=False, return_labels=False):
                 "Index 0 in a datapoint's input_ids must not have loss (unignored labels) on it",
                 UserWarning,
             )
+        # 因果语言模型用位置 t-1 的隐藏状态预测位置 t，因此这里要左移一位切片。
         log_probs_batch.append(target_log_probs[i, start_idx - 1 : end_idx])
         labels_batch.append(labels[actual_indices])
 
@@ -183,7 +196,7 @@ def tokenwise_vocab_logprobs(model, batch, grad=False, return_labels=False):
                 "Index 0 in a datapoint's input_ids must not have loss (unignored labels) on it",
                 UserWarning,
             )
-        # Return full distribution for each position: shape (N, V)
+        # 这里保留每个监督位置上的全词表分布，供下游做 argmax 或更细粒度分析。
         log_probs_batch.append(log_probs[i, start_idx - 1 : end_idx])
         labels_batch.append(labels[actual_indices])
 
@@ -236,6 +249,7 @@ def stop_sequences_criteria(
     initial_decoder_input_length: int,
     batch_size: int,
 ) -> StoppingCriteriaList:
+    """根据字符串形式的 stop sequence 构造 Transformers 停止条件。"""
     return StoppingCriteriaList(
         [
             *[
@@ -275,6 +289,7 @@ def eval_text_similarity(model, tokenizer, batch, generation_args):
     full_texts = tokenizer.batch_decode(
         tokens, skip_special_tokens=True, clean_up_tokenization_spaces=True
     )
+    # labels 中既包含提示词也包含目标答案，这里通过去掉输入前缀恢复真实参考答案。
     ground_truths = [
         full_text.replace(input_text, "").strip()
         for input_text, full_text in zip(input_texts, full_texts)

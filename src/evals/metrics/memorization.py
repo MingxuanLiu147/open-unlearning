@@ -1,3 +1,12 @@
+"""与记忆化/答案复现相关的指标实现。
+
+这个文件中的指标主要衡量模型是否还能复现目标答案，包括：
+- 概率类指标：``probability``、``probability_w_options``
+- 文本重合类指标：``rouge``
+- 正误答案对比类指标：``truth_ratio``
+- token 级复现类指标：``exact_memorization``、``extraction_strength``
+"""
+
 import logging
 import torch
 import numpy as np
@@ -176,6 +185,7 @@ def truth_ratio(model, **kwargs):
 
 @unlearning_metric(name="exact_memorization")
 def exact_memorization(model, **kwargs):
+    """计算目标答案 token 级别的精确匹配比例。"""
     data = kwargs["data"]
     collator = kwargs["collators"]
     batch_size = kwargs["batch_size"]
@@ -199,6 +209,7 @@ def exact_memorization(model, **kwargs):
                 )
                 em_batch.append({"score": None})
             else:
+                # 这里按 token 比较 argmax 预测和真实标签，得到逐样本 EM 分数。
                 preds = torch.argmax(log_probs, dim=-1)
                 em_score = (preds == labels).sum() / valid_len
                 em_batch.append({"score": em_score.item()})
@@ -221,6 +232,7 @@ def exact_memorization(model, **kwargs):
 
 @unlearning_metric(name="extraction_strength")
 def extraction_strength(model, **kwargs):
+    """衡量模型能从多早的位置开始完整复现目标答案后缀。"""
     data = kwargs["data"]
     collator = kwargs["collators"]
     batch_size = kwargs["batch_size"]
@@ -234,6 +246,7 @@ def extraction_strength(model, **kwargs):
         for log_probs, labels in zip(log_probs_batch, labels_batch):
             valid_len = len(labels)
             preds = torch.argmax(log_probs, dim=-1)
+            # 找到最早一个位置，使得从该位置开始的预测后缀与真实后缀完全一致。
             for k in range(valid_len):
                 suff_preds = preds[k:]
                 suff_labels = labels[k:]
@@ -250,6 +263,7 @@ def extraction_strength(model, **kwargs):
                 )
                 es_batch.append({"score": 0})
             else:
+                # 值越大，说明模型越早进入“完全正确复现”的状态，提取强度越高。
                 es_score = 1 - (k / valid_len)
                 es_batch.append({"score": es_score})
         return es_batch

@@ -14,12 +14,22 @@ from omegaconf import DictConfig
 from data.qa import QADataset, QAwithIdkDataset, QAwithAlternateDataset
 from data.collators import (
     DataCollatorForSupervisedDataset,
+    DataCollatorForReFTDataset,
 )
 from data.unlearn import ForgetRetainDataset
 from data.pretraining import PretrainingDataset, CompletionDataset
 
 # Knowledge Editing 数据集
-from data.editing import EditingDataset, ZSREDataset, CounterFactDataset
+from data.editing import (
+    AKEWDataset,
+    ConceptEditDataset,
+    CounterFactDataset,
+    EditingDataset,
+    ELKENDataset,
+    LEMEDataset,
+    UnKEDataset,
+    ZSREDataset,
+)
 
 # Knowledge Injection 数据集
 from data.inject import InjectDataset, AlpacaDataset, ShareGPTDataset
@@ -80,7 +90,7 @@ def get_data(data_cfg: DictConfig, mode="train", **kwargs):
     """高层数据加载入口。
 
     根据 Hydra 的 data 配置构造完整的数据集字典，支持：
-      - mode="train": 返回各个 split 原始数据集（如 {"forget": ds1, "retain": ds2, "eval": ds3}）
+      - mode="train"/"finetune"/"inject"/"edit": 返回各个 split 原始数据集
       - mode="unlearn": 将 forget / retain 等训练相关 split 组合成一个 ForgetRetainDataset，挂到 "train" 键下
     """
     data = {}
@@ -89,10 +99,20 @@ def get_data(data_cfg: DictConfig, mode="train", **kwargs):
     # anchor 控制 ForgetRetainDataset 的锚定数据集（默认 forget）
     anchor = data_cfg.pop("anchor", "forget")
     for split, dataset_cfgs in data_cfg.items():
+        # 兼容 edit/inject 数据集配置中的同名包裹层，例如:
+        # data.edit.edit.{dataset} / data.train.train.{dataset}
+        # 统一解包为 data.edit.{dataset} / data.train.{dataset}
+        if (
+            isinstance(dataset_cfgs, (dict, DictConfig))
+            and len(dataset_cfgs) == 1
+            and split in dataset_cfgs
+            and isinstance(dataset_cfgs[split], (dict, DictConfig))
+        ):
+            dataset_cfgs = dataset_cfgs[split]
         # 对每个 split（forget/retain/eval/...）调用 get_datasets
         data[split] = get_datasets(dataset_cfgs, **kwargs)
-    if mode == "train":
-        # 普通训练：直接按 split 返回
+    if mode in ("train", "finetune", "inject", "edit"):
+        # 普通训练类场景：直接按 split 返回
         return data
     elif mode == "unlearn":
         # 遗忘场景：把除了 eval / test 以外的 split 合并成一个组合数据集
@@ -130,6 +150,9 @@ def get_collators(collator_cfgs, **kwargs):
     - 只配置一个时，直接返回单个 collator
     - 多个时，返回 name -> collator 的字典
     """
+    if isinstance(collator_cfgs, (dict, DictConfig)) and collator_cfgs.get("handler"):
+        return _get_single_collator("collator", collator_cfgs, **kwargs)
+
     collators = {}
     for collator_name, collator_cfg in collator_cfgs.items():
         collators[collator_name] = _get_single_collator(
@@ -157,6 +180,11 @@ _register_data(ForgetRetainDataset)
 _register_data(EditingDataset)
 _register_data(ZSREDataset)
 _register_data(CounterFactDataset)
+_register_data(ELKENDataset)
+_register_data(UnKEDataset)
+_register_data(ConceptEditDataset)
+_register_data(AKEWDataset)
+_register_data(LEMEDataset)
 
 # Register Knowledge Injection datasets
 _register_data(InjectDataset)
@@ -165,3 +193,4 @@ _register_data(ShareGPTDataset)
 
 # Register collators
 _register_collator(DataCollatorForSupervisedDataset)
+_register_collator(DataCollatorForReFTDataset)

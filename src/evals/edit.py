@@ -47,7 +47,10 @@ class EditEvaluator(Evaluator):
         return ("" if prompt is None else str(prompt).strip(), self._flatten_target(target).strip())
 
     def _normalize_rephrase_prompts(self, item: Dict[str, Any]) -> List[str]:
-        raw = item.get("rephrase_prompts", item.get("rephrase_prompt", []))
+        raw = item.get(
+            "rephrase_prompts",
+            item.get("rephrase_prompt", item.get("rephrase", [])),
+        )
         if raw is None:
             return []
         if isinstance(raw, str):

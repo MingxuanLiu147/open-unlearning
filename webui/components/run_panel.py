@@ -16,6 +16,7 @@ if str(webui_dir) not in sys.path:
 
 import gradio as gr
 from utils.result_parser import ResultParser
+from utils.i18n import t, get_language
 
 
 def create_run_panel() -> Dict[str, Any]:
@@ -27,18 +28,18 @@ def create_run_panel() -> Dict[str, Any]:
     components = {}
     
     with gr.Column(scale=1):
-        gr.Markdown("## 运行控制")
+        gr.Markdown(f"## {t('run_title')}")
         
         # 运行控制
         with gr.Group():
             with gr.Row():
                 components["run_btn"] = gr.Button(
-                    "▶️ 开始运行",
+                    t("run_btn"),
                     variant="primary",
                     scale=2
                 )
                 components["stop_btn"] = gr.Button(
-                    "⏹️ 停止",
+                    t("stop_btn"),
                     variant="stop",
                     scale=1,
                     interactive=False
@@ -46,59 +47,59 @@ def create_run_panel() -> Dict[str, Any]:
             
             # 运行状态
             components["status"] = gr.Markdown(
-                value="**状态**: 就绪",
+                value=t("status_ready"),
                 visible=True
             )
         
         # 命令预览
         with gr.Group():
-            gr.Markdown("### 命令预览")
+            gr.Markdown(f"### {t('command_preview_title')}")
             components["command_preview"] = gr.Textbox(
                 value="# 选择配置后生成命令",
-                label="CLI 命令",
+                label=t("command_preview_label"),
                 lines=8,
                 interactive=False
             )
-            components["copy_btn"] = gr.Button("📋 复制命令", size="sm")
+            components["copy_btn"] = gr.Button(t("copy_command"), size="sm")
         
         # GPU 选择
         with gr.Group():
-            gr.Markdown("### 环境配置")
+            gr.Markdown(f"### {t('env_config_title')}")
             components["cuda_devices"] = gr.Textbox(
                 value="0",
-                label="CUDA_VISIBLE_DEVICES",
-                info="GPU 设备 ID，多卡用逗号分隔（如: 0,1）"
+                label=t("cuda_devices_label"),
+                info=t("cuda_devices_info")
             )
         
         # 实时日志
         with gr.Group():
-            gr.Markdown("### 运行日志")
+            gr.Markdown(f"### {t('log_title')}")
             components["log_output"] = gr.Textbox(
                 value="",
-                label="日志输出",
+                label=t("log_label"),
                 lines=20,
                 max_lines=30,
                 interactive=False,
                 autoscroll=True
             )
             with gr.Row():
-                components["clear_log_btn"] = gr.Button("🗑️ 清空日志", size="sm")
-                components["scroll_btn"] = gr.Button("⬇️ 滚动到底部", size="sm")
+                components["clear_log_btn"] = gr.Button(t("clear_log"), size="sm")
+                components["scroll_btn"] = gr.Button(t("scroll_bottom"), size="sm")
         
         # 结果展示区
         with gr.Group():
-            gr.Markdown("### 运行结果")
+            gr.Markdown(f"### {t('result_title')}")
             components["result_summary"] = gr.HTML(
-                value="<p style='color: #888;'>运行完成后显示结果摘要</p>"
+                value=f"<p style='color: #888;'>{t('result_placeholder')}</p>"
             )
             with gr.Row():
                 components["output_dir"] = gr.Textbox(
                     value="",
-                    label="输出目录",
+                    label=t("output_dir_label"),
                     interactive=False,
                     scale=3
                 )
-                components["load_results_btn"] = gr.Button("📊 加载结果", size="sm", scale=1)
+                components["load_results_btn"] = gr.Button(t("load_results"), size="sm", scale=1)
     
     return components
 
@@ -159,6 +160,10 @@ def generate_command_preview(
     if trainer:
         cmd_parts.append(f"trainer={trainer}")
     
+    # 添加评测套件（训练模式也需要指定 eval）
+    if eval_suite:
+        cmd_parts.append(f"eval={eval_suite}")
+    
     # 添加任务名称和种子
     if task_name:
         cmd_parts.append(f"task_name={task_name}")
@@ -176,24 +181,24 @@ def generate_command_preview(
 
 
 def update_status(running: bool, exit_code: int = None) -> Tuple[gr.update, gr.update, gr.update]:
-    """更新运行状态
+    """更新运行状态（支持 i18n）
     
     Returns:
         (status_update, run_btn_update, stop_btn_update)
     """
     if running:
-        status = "**状态**: 🏃 运行中..."
+        status = t("status_running")
         run_interactive = False
         stop_interactive = True
     elif exit_code is not None:
         if exit_code == 0:
-            status = "**状态**: ✅ 运行成功"
+            status = t("status_success")
         else:
-            status = f"**状态**: ❌ 运行失败 (退出码: {exit_code})"
+            status = t("status_failed", exit_code=exit_code)
         run_interactive = True
         stop_interactive = False
     else:
-        status = "**状态**: 就绪"
+        status = t("status_ready")
         run_interactive = True
         stop_interactive = False
     

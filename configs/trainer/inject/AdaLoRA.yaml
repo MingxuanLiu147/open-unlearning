@@ -3,7 +3,8 @@
 # 自适应秩分配，根据重要性动态调整
 
 defaults:
-  - base_inject
+  - inject/base_inject@_here_
+  - _self_
 
 handler: AdaLoRATrainer
 

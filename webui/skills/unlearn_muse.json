@@ -1,0 +1,62 @@
+{
+  "id": "unlearn_muse",
+  "name": "遗忘 MUSE 基准（多场景）",
+  "name_en": "MUSE Unlearning (Multi-scenario)",
+  "goal": "unlearn",
+  "description": "在 MUSE 数据集上进行多场景遗忘实验，支持新闻、书籍等不同领域的知识遗忘评估。",
+  "description_en": "Multi-scenario unlearning experiments on MUSE dataset, supporting news, books and other domains.",
+  
+  "config": {
+    "mode": "unlearn",
+    "model": "Qwen2.5-7B-Instruct",
+    "trainer": "SimNPO",
+    "experiment": "unlearn/muse/default",
+    "task_name": "muse_simnpo_run",
+    "seed": 42,
+    "learning_rate": "1e-5",
+    "num_epochs": 3,
+    "batch_size": 4,
+    "gradient_accumulation": 4
+  },
+  
+  "supported_data_modes": ["single", "batch"],
+  "supported_input_formats": ["jsonl", "json"],
+  
+  "recommended_models": [
+    "Qwen2.5-7B-Instruct",
+    "Llama-3.1-8B-Instruct"
+  ],
+  "recommended_eval": "muse",
+  "resource_estimate": "1× A100 (40GB) · 约 3-4 小时",
+  "resource_estimate_en": "1× A100 (40GB) · ~3-4 hours",
+  
+  "core_overrides": {
+    "trainer": "SimNPO",
+    "trainer.args.learning_rate": "1e-5",
+    "trainer.args.num_train_epochs": 3
+  },
+  
+  "constraints": [
+    "需要预先下载 MUSE 数据集",
+    "支持 news 和 books 两种场景"
+  ],
+  "constraints_en": [
+    "MUSE dataset must be downloaded first",
+    "Supports news and books scenarios"
+  ],
+  
+  "risk_notes": [
+    "不同场景的遗忘难度不同",
+    "新闻类内容遗忘相对容易，书籍类更有挑战"
+  ],
+  "risk_notes_en": [
+    "Unlearning difficulty varies by scenario",
+    "News content is easier to unlearn than books"
+  ],
+  
+  "prompt_hints": "适合需要评估多场景遗忘能力的研究。MUSE 提供更全面的遗忘评测指标。",
+  "prompt_hints_en": "Suitable for research evaluating multi-scenario unlearning. MUSE provides comprehensive unlearning metrics.",
+  
+  "tags": ["MUSE", "遗忘", "多场景", "SimNPO"],
+  "tags_en": ["MUSE", "Unlearn", "Multi-scenario", "SimNPO"]
+}

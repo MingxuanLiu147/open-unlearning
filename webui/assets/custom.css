@@ -1,0 +1,302 @@
+/* Know-Surgery WebUI — Teal 科研风格主题 */
+
+/* ===== CSS 变量 ===== */
+:root {
+    --ks-primary:    #0D9488;
+    --ks-dark:       #0F766E;
+    --ks-light:      #CCFBF1;
+    --ks-bg:         #F0FDFA;
+    --ks-text:       #134E4A;
+    --ks-border:     #99F6E4;
+    --ks-accent:     #14B8A6;
+    --ks-warning:    #F59E0B;
+    --ks-error:      #EF4444;
+    --ks-success:    #10B981;
+    --ks-card-shadow: 0 2px 8px rgba(13, 148, 136, 0.12);
+}
+
+/* ===== 全局背景 ===== */
+.gradio-container {
+    background-color: var(--ks-bg) !important;
+    font-family: "Inter", "PingFang SC", "Noto Sans CJK SC", sans-serif !important;
+}
+
+/* ===== 标题栏 ===== */
+#ks-header {
+    background: linear-gradient(135deg, var(--ks-dark) 0%, var(--ks-primary) 100%);
+    color: white !important;
+    padding: 18px 28px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    box-shadow: var(--ks-card-shadow);
+}
+#ks-header h1 {
+    color: white !important;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+#ks-header p {
+    color: var(--ks-light) !important;
+    margin: 4px 0 0;
+    font-size: 0.875rem;
+    opacity: 0.9;
+}
+
+/* ===== Tab 导航美化 ===== */
+.tab-nav button {
+    color: var(--ks-text) !important;
+    border-bottom: 2px solid transparent !important;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+.tab-nav button.selected {
+    color: var(--ks-primary) !important;
+    border-bottom-color: var(--ks-primary) !important;
+    background: transparent !important;
+}
+.tab-nav button:hover:not(.selected) {
+    color: var(--ks-accent) !important;
+    background: var(--ks-light) !important;
+}
+
+/* ===== 卡片通用样式 ===== */
+.ks-card {
+    background: white;
+    border: 1px solid var(--ks-border);
+    border-radius: 10px;
+    padding: 14px;
+    box-shadow: var(--ks-card-shadow);
+    transition: box-shadow 0.2s;
+}
+.ks-card:hover {
+    box-shadow: 0 4px 16px rgba(13, 148, 136, 0.18);
+}
+
+/* ===== Mode 选择 Radio → 卡片样式 ===== */
+/* Gradio 4.x: #elem_id 包裹整个 Radio 组件 */
+#mode-radio > .wrap {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+#mode-radio > .wrap > label {
+    flex: 1 1 calc(50% - 8px) !important;
+    min-width: 120px !important;
+    border: 2px solid var(--ks-border) !important;
+    border-radius: 10px !important;
+    padding: 10px 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    background: white !important;
+    margin: 0 !important;
+}
+#mode-radio > .wrap > label:hover {
+    border-color: var(--ks-accent) !important;
+    background: var(--ks-bg) !important;
+}
+#mode-radio > .wrap > label:has(input:checked) {
+    border-color: var(--ks-primary) !important;
+    background: var(--ks-light) !important;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15) !important;
+}
+#mode-radio > .wrap > label span {
+    font-weight: 500 !important;
+    color: var(--ks-text) !important;
+    font-size: 0.9rem !important;
+}
+#mode-radio input[type="radio"] {
+    display: none !important;
+}
+
+/* ===== Accordion 美化 ===== */
+.accordion {
+    border: 1px solid var(--ks-border) !important;
+    border-radius: 8px !important;
+    overflow: hidden !important;
+}
+.accordion > .label-wrap {
+    background: var(--ks-bg) !important;
+    color: var(--ks-text) !important;
+    font-weight: 600 !important;
+    padding: 10px 14px !important;
+}
+
+/* ===== 主按钮 ===== */
+button.primary {
+    background: linear-gradient(135deg, var(--ks-primary), var(--ks-dark)) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    color: white !important;
+    font-weight: 600 !important;
+    transition: all 0.2s !important;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.3) !important;
+}
+button.primary:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4) !important;
+}
+
+/* ===== 列标题 ===== */
+.ks-col-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ks-primary);
+    border-bottom: 2px solid var(--ks-border);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+
+/* ===== 结果对比 Tab ===== */
+.ks-compare-run {
+    border-left: 3px solid var(--ks-primary);
+    padding-left: 10px;
+    margin-bottom: 8px;
+}
+.ks-metric-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 2px;
+}
+
+/* ===== 示例选择器 Radio → 卡片样式 ===== */
+#example-selector-radio > .wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+}
+#example-selector-radio > .wrap > label {
+    border: 1.5px solid var(--ks-border) !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    background: white !important;
+    margin: 0 !important;
+}
+#example-selector-radio > .wrap > label:hover {
+    border-color: var(--ks-accent) !important;
+    background: var(--ks-bg) !important;
+}
+#example-selector-radio > .wrap > label:has(input:checked) {
+    border-color: var(--ks-primary) !important;
+    background: var(--ks-light) !important;
+    box-shadow: 0 0 0 2px rgba(13,148,136,0.15) !important;
+}
+#example-selector-radio input[type="radio"] {
+    display: none !important;
+}
+#example-selector-radio > .wrap > label span {
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    color: var(--ks-text) !important;
+}
+
+/* ===== Skill 选择器 Radio → 卡片样式 ===== */
+#skill-selector-radio > .wrap {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+}
+#skill-selector-radio > .wrap > label {
+    border: 1.5px solid var(--ks-border) !important;
+    border-radius: 10px !important;
+    padding: 10px 14px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    background: white !important;
+    margin: 0 !important;
+}
+#skill-selector-radio > .wrap > label:hover {
+    border-color: var(--ks-accent) !important;
+    background: var(--ks-bg) !important;
+}
+#skill-selector-radio > .wrap > label:has(input:checked) {
+    border-color: var(--ks-primary) !important;
+    background: var(--ks-light) !important;
+    box-shadow: 0 0 0 2px rgba(13,148,136,0.15) !important;
+}
+#skill-selector-radio input[type="radio"] {
+    display: none !important;
+}
+#skill-selector-radio > .wrap > label span {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: var(--ks-text) !important;
+}
+
+/* ===== Before/After 分栏 ===== */
+.ks-before {
+    border-left: 3px solid #94A3B8;
+    padding-left: 10px;
+}
+.ks-after {
+    border-left: 3px solid var(--ks-success);
+    padding-left: 10px;
+}
+
+/* ===== 日志输出区 ===== */
+.log-output textarea {
+    font-family: "JetBrains Mono", "Fira Code", monospace !important;
+    font-size: 0.8rem !important;
+    background: #0F1117 !important;
+    color: #C8D3F5 !important;
+    border-radius: 8px !important;
+}
+
+/* ===== 状态指示器 ===== */
+.ks-status-running { color: var(--ks-warning); font-weight: 600; }
+.ks-status-success { color: var(--ks-success); font-weight: 600; }
+.ks-status-error   { color: var(--ks-error);   font-weight: 600; }
+
+/* ===== 语言切换按钮 ===== */
+#lang-switcher {
+    min-width: 100px !important;
+}
+#lang-switcher > .wrap {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 4px !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+}
+#lang-switcher > .wrap > label {
+    flex: 1 !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 6px 10px !important;
+    cursor: pointer !important;
+    transition: all 0.15s !important;
+    background: transparent !important;
+    margin: 0 !important;
+    text-align: center !important;
+}
+#lang-switcher > .wrap > label:hover {
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+#lang-switcher > .wrap > label:has(input:checked) {
+    background: white !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+#lang-switcher > .wrap > label span {
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    color: var(--ks-text) !important;
+}
+#lang-switcher input[type="radio"] {
+    display: none !important;
+}
+
+/* ===== 顶栏布局 ===== */
+#ks-header-row {
+    align-items: center !important;
+    margin-bottom: 8px !important;
+}
