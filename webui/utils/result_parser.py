@@ -47,6 +47,36 @@ class ResultParser:
         "task_accuracy": "任务准确率",
         "knowledge_retention": "知识保持",
     }
+
+    # 指标方向语义：higher -> 值越高越好，lower -> 值越低越好
+    METRIC_DIRECTION: Dict[str, str] = {
+        "forget_quality": "higher",
+        "model_utility": "higher",
+        "forget_Q_A_Prob": "lower",
+        "forget_Q_A_ROUGE": "lower",
+        "forget_Truth_Ratio": "lower",
+        "privleak": "lower",
+        "extraction_strength": "lower",
+        "exact_memorization": "lower",
+        "forget_knowmem_ROUGE": "lower",
+        "forget_verbmem_ROUGE": "lower",
+        "retain_knowmem_ROUGE": "higher",
+        "reliability": "higher",
+        "generalization": "higher",
+        "locality": "higher",
+        "portability": "higher",
+        "task_accuracy": "higher",
+        "knowledge_retention": "higher",
+    }
+
+    @classmethod
+    def get_best_value(cls, values: List[Optional[float]], metric: str) -> Optional[float]:
+        """根据 metric direction 获取最佳值。"""
+        numeric = [v for v in values if isinstance(v, (int, float))]
+        if not numeric:
+            return None
+        direction = cls.METRIC_DIRECTION.get(metric, "higher")
+        return max(numeric) if direction == "higher" else min(numeric)
     
     @staticmethod
     def find_summary_files(output_dir: str) -> List[str]:
@@ -167,18 +197,10 @@ class ResultParser:
     
     @classmethod
     def render_compare_html(cls, runs: Dict[str, List["EvalResult"]]) -> str:
-        """将多个 run 的结果渲染为横向对比 HTML 表格。
-
-        Args:
-            runs: {run_label: [EvalResult, ...]} 字典，每个 label 对应一个 checkpoint 的结果列表
-
-        Returns:
-            HTML 字符串（包含对比表格）
-        """
+        """将多个 run 的结果渲染为横向对比 HTML 表格（蓝灰主题 + metric direction 高亮）。"""
         if not runs:
             return "<p style='color:#888;'>请先选择要对比的实验 Run</p>"
 
-        # 收集所有 eval_name × metric 的并集
         all_evals: Dict[str, set] = {}
         for result_list in runs.values():
             for r in result_list:
@@ -192,7 +214,7 @@ class ResultParser:
         for eval_name, metric_set in sorted(all_evals.items()):
             metrics = sorted(metric_set)
             header_cells = "".join(
-                f"<th style='padding:8px 12px;background:#0D9488;color:white;"
+                f"<th style='padding:8px 12px;background:#355CFF;color:white;"
                 f"font-size:0.8rem;white-space:nowrap;max-width:160px;"
                 f"overflow:hidden;text-overflow:ellipsis;' title='{lbl}'>{lbl.split('/')[-1]}</th>"
                 for lbl in run_labels
@@ -201,6 +223,8 @@ class ResultParser:
             rows = []
             for metric in metrics:
                 display = cls.METRIC_DESCRIPTIONS.get(metric, metric)
+                direction = cls.METRIC_DIRECTION.get(metric, "higher")
+                arrow = "↑" if direction == "higher" else "↓"
                 cells = []
                 values = []
                 for lbl in run_labels:
@@ -211,43 +235,42 @@ class ResultParser:
                             break
                     values.append(val)
 
-                # 找最大值用于高亮（仅数值类型）
-                numeric = [v for v in values if isinstance(v, (int, float))]
-                max_val = max(numeric) if numeric else None
+                best_val = cls.get_best_value(values, metric)
 
                 for val in values:
                     if val is None:
                         cells.append("<td style='text-align:center;color:#bbb;padding:6px 10px;'>—</td>")
                     else:
                         fval = cls.format_metric_value(val)
-                        is_best = isinstance(val, (int, float)) and max_val is not None and val == max_val
-                        bg = "background:#CCFBF1;" if is_best else ""
+                        is_best = isinstance(val, (int, float)) and best_val is not None and val == best_val
+                        bg = "background:#DCFCE7;" if is_best else ""
                         fw = "font-weight:700;" if is_best else ""
-                        color = "#0F766E" if is_best else "#134E4A"
+                        color = "#166534" if is_best else "#0F172A"
                         cells.append(
                             f"<td style='text-align:center;padding:6px 10px;{bg}{fw}color:{color};'>{fval}</td>"
                         )
 
                 rows.append(
-                    f"<tr><td style='padding:6px 10px;font-size:0.85rem;color:#374151;"
-                    f"white-space:nowrap;border-right:1px solid #E5E7EB;'>{display}</td>"
+                    f"<tr><td style='padding:6px 10px;font-size:0.85rem;color:#334155;"
+                    f"white-space:nowrap;border-right:1px solid #D7E0F0;'>"
+                    f"{display} <span style='color:#94A3B8;font-size:0.7rem;'>{arrow}</span></td>"
                     + "".join(cells) + "</tr>"
                 )
 
             html_parts.append(f"""
 <div style='margin-bottom:20px;overflow-x:auto;'>
-  <div style='font-weight:700;color:#0D9488;font-size:0.95rem;margin-bottom:8px;
-              border-left:3px solid #0D9488;padding-left:8px;'>{eval_name}</div>
+  <div style='font-weight:700;color:#355CFF;font-size:0.95rem;margin-bottom:8px;
+              border-left:3px solid #355CFF;padding-left:8px;'>{eval_name}</div>
   <table style='border-collapse:collapse;width:100%;font-size:0.85rem;'>
     <thead>
       <tr>
-        <th style='padding:8px 12px;background:#0F766E;color:white;font-size:0.8rem;
+        <th style='padding:8px 12px;background:#1D3FDB;color:white;font-size:0.8rem;
                    text-align:left;border-right:1px solid rgba(255,255,255,0.2);'>指标</th>
         {header_cells}
       </tr>
     </thead>
     <tbody>
-      {''.join(f'<tr style="background:{"white" if i%2==0 else "#F0FDFA"};">{r[4:]}'
+      {''.join(f'<tr style="background:{"white" if i%2==0 else "#F5F7FB"};">{r[4:]}'
                for i, r in enumerate(rows))}
     </tbody>
   </table>

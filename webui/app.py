@@ -214,6 +214,30 @@ def build_ui() -> gr.Blocks:
             wizard_components, config_components, params_components
         )
 
+        # --- Tab 1: 自定义模型切换 ---
+        def on_custom_model_toggle(use_custom):
+            return (
+                gr.update(visible=use_custom),
+                gr.update(interactive=not use_custom),
+            )
+
+        config_components["use_custom_model"].change(
+            fn=on_custom_model_toggle,
+            inputs=[config_components["use_custom_model"]],
+            outputs=[config_components["custom_model_input"], config_components["model"]],
+        )
+
+        def on_custom_model_input(text):
+            if text and text.strip():
+                return gr.update(value=text.strip())
+            return gr.update()
+
+        config_components["custom_model_input"].change(
+            fn=on_custom_model_input,
+            inputs=[config_components["custom_model_input"]],
+            outputs=[config_components["model"]],
+        )
+
         # --- Tab 1: Mode 改变时更新配置 ---
         config_components["mode"].change(
             fn=lambda mode: update_config_on_mode_change(mode, config_loader),

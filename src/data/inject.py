@@ -19,6 +19,7 @@ from torch.utils.data import Dataset
 from datasets import load_dataset
 
 logger = logging.getLogger(__name__)
+_MISSING = object()
 
 
 class InjectDataset(Dataset):
@@ -53,9 +54,9 @@ class InjectDataset(Dataset):
             hf_args: HuggingFace 数据集参数
             data_path: 本地数据路径
             format_type: 数据格式 (alpaca/sharegpt/custom)
-            instruction_key: 指令字段名
-            input_key: 输入字段名
-            output_key: 输出字段名
+            instruction_key: 指令字段名，支持点路径（如 question.problem）
+            input_key: 输入字段名，支持点路径
+            output_key: 输出字段名，支持点路径
             conversations_key: 对话字段名（ShareGPT 格式）
             tokenizer: 分词器
             max_length: 最大长度
@@ -96,6 +97,36 @@ class InjectDataset(Dataset):
             logger.warning("No data source specified")
             return []
 
+    def _resolve_field_value(self, item: Any, key: str) -> Any:
+        """解析字段值，支持 a.b.0 这样的点路径。"""
+        if not isinstance(key, str):
+            return _MISSING
+
+        if isinstance(item, dict) and key in item:
+            return item[key]
+
+        current = item
+        for part in key.split("."):
+            if isinstance(current, dict):
+                if part not in current:
+                    return _MISSING
+                current = current[part]
+                continue
+
+            if isinstance(current, list):
+                try:
+                    index = int(part)
+                except (TypeError, ValueError):
+                    return _MISSING
+                if index < 0 or index >= len(current):
+                    return _MISSING
+                current = current[index]
+                continue
+
+            return _MISSING
+
+        return current
+
     def __len__(self) -> int:
         return len(self.data)
 
@@ -131,13 +162,13 @@ class InjectDataset(Dataset):
         allow_empty: bool = False,
     ) -> str:
         """校验并返回字符串字段，尽早暴露坏样本。"""
-        if key not in item:
+        value = self._resolve_field_value(item, key)
+        if value is _MISSING:
             raise ValueError(
                 f"InjectDataset[{idx}] missing required field '{key}' "
                 f"for format '{self.format_type}'."
             )
 
-        value = item[key]
         if value is None:
             raise ValueError(
                 f"InjectDataset[{idx}] field '{key}' is None "
@@ -156,8 +187,8 @@ class InjectDataset(Dataset):
         return value
 
     def _optional_text_field(self, item: Dict[str, Any], key: str) -> str:
-        value = item.get(key, "")
-        if value is None:
+        value = self._resolve_field_value(item, key)
+        if value is _MISSING or value is None:
             return ""
         if not isinstance(value, str):
             value = str(value)

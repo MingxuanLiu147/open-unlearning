@@ -1,0 +1,5 @@
+data_dir: data/MLLMU-Bench
+forget_split_ratio: 5
+batch_size: 4
+ans_only: false
+full_set_parquet: data/MLLMU-Bench/Full_Set/train-00000-of-00001.parquet

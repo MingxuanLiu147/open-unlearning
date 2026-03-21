@@ -1,0 +1,25 @@
+name: "Multi-Method Compare"
+description: "在同一数据集上运行多种方法进行对比实验"
+description_en: "Run multiple methods on the same dataset for comparison"
+mode: unlearn
+auto_select: true
+tags: [comparison, ablation, unlearn]
+steps:
+  - model: Llama-3.2-1B-Instruct
+    trainer: SimNPO
+    datasets:
+      forget: TOFU_QA_forget
+      retain: TOFU_QA_retain
+    eval: tofu
+    params:
+      learning_rate: 1e-5
+      num_epochs: 5
+  - model: Llama-3.2-1B-Instruct
+    trainer: RMU
+    datasets:
+      forget: TOFU_QA_forget
+      retain: TOFU_QA_retain
+    eval: tofu
+    params:
+      learning_rate: 1e-5
+      num_epochs: 5

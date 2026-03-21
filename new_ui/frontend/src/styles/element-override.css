@@ -1,0 +1,42 @@
+/* Override Element Plus to use CSS variables for theming */
+
+:root {
+  --el-color-primary: var(--accent-primary);
+  --el-color-success: var(--accent-success);
+  --el-color-warning: var(--accent-warning);
+  --el-color-danger: var(--accent-danger);
+  --el-bg-color: var(--bg-surface);
+  --el-bg-color-overlay: var(--bg-surface);
+  --el-text-color-primary: var(--text-primary);
+  --el-text-color-regular: var(--text-primary);
+  --el-text-color-secondary: var(--text-secondary);
+  --el-border-color: var(--border-color);
+  --el-border-color-light: var(--border-color);
+  --el-fill-color-blank: var(--bg-input);
+  --el-font-family: var(--font-sans);
+  --el-border-radius-base: var(--radius-sm);
+}
+
+:root[data-theme="dark"] {
+  --el-bg-color: var(--bg-surface);
+  --el-bg-color-page: var(--bg-body);
+  --el-bg-color-overlay: var(--bg-card);
+  --el-fill-color: #273548;
+  --el-fill-color-light: #1e293b;
+  --el-fill-color-lighter: #1e293b;
+  --el-fill-color-blank: var(--bg-input);
+  --el-mask-color: rgba(0, 0, 0, 0.6);
+}
+
+.el-button--primary {
+  --el-button-bg-color: var(--accent-primary);
+  --el-button-border-color: var(--accent-primary);
+}
+
+.el-tabs__item.is-active {
+  color: var(--accent-primary);
+}
+
+.el-tabs__active-bar {
+  background-color: var(--accent-primary);
+}

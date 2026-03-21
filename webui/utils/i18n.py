@@ -769,6 +769,144 @@ TRANSLATIONS: Dict[str, Dict[str, str]] = {
         "zh": "DeepSeek 系列（deepseek-chat, deepseek-reasoner...）",
         "en": "DeepSeek series (deepseek-chat, deepseek-reasoner...)",
     },
+
+    # ==================== Phase 7A: 智能助手闭环 ====================
+    "assistant_goal_input_label": {
+        "zh": "描述你的目标",
+        "en": "Describe your goal",
+    },
+    "assistant_goal_input_placeholder": {
+        "zh": "例如：我想让模型遗忘某人的个人信息…",
+        "en": "e.g.: I want the model to forget someone's personal info…",
+    },
+    "assistant_get_recommendation": {
+        "zh": "✨ 获取建议",
+        "en": "✨ Get Recommendation",
+    },
+    "assistant_recommendation_title": {
+        "zh": "配置建议",
+        "en": "Configuration Recommendation",
+    },
+    "assistant_recommendation_empty": {
+        "zh": "输入目标后点击「获取建议」，或直接与 Agent 对话",
+        "en": "Enter your goal and click 'Get Recommendation', or chat with Agent directly",
+    },
+    "assistant_diff_title": {
+        "zh": "变更预览",
+        "en": "Change Preview",
+    },
+    "assistant_diff_empty": {
+        "zh": "获取建议后可预览与当前配置的差异",
+        "en": "Preview the diff against current config after getting a recommendation",
+    },
+    "assistant_apply_recommendation": {
+        "zh": "✅ 应用建议到配置页",
+        "en": "✅ Apply Recommendation to Config",
+    },
+    "assistant_apply_success": {
+        "zh": "✅ 建议已应用到配置页",
+        "en": "✅ Recommendation applied to config page",
+    },
+    "assistant_apply_failed": {
+        "zh": "❌ 应用失败：{error}",
+        "en": "❌ Apply failed: {error}",
+    },
+    "assistant_no_recommendation": {
+        "zh": "⚠️ 请先获取建议",
+        "en": "⚠️ Please get a recommendation first",
+    },
+    "assistant_generating": {
+        "zh": "⏳ 正在生成建议…",
+        "en": "⏳ Generating recommendation…",
+    },
+    "assistant_card_mode": {
+        "zh": "模式",
+        "en": "Mode",
+    },
+    "assistant_card_skill": {
+        "zh": "推荐模板",
+        "en": "Recommended Skill",
+    },
+    "assistant_card_method": {
+        "zh": "推荐方法",
+        "en": "Recommended Method",
+    },
+    "assistant_card_model": {
+        "zh": "推荐模型",
+        "en": "Recommended Model",
+    },
+    "assistant_card_eval": {
+        "zh": "评测方案",
+        "en": "Eval Plan",
+    },
+    "assistant_card_data": {
+        "zh": "数据方案",
+        "en": "Data Plan",
+    },
+    "assistant_card_reasoning": {
+        "zh": "推荐理由",
+        "en": "Reasoning",
+    },
+    "assistant_card_risk": {
+        "zh": "⚠️ 风险提示",
+        "en": "⚠️ Risk Notes",
+    },
+    "assistant_card_overrides": {
+        "zh": "核心参数",
+        "en": "Core Overrides",
+    },
+    "assistant_diff_field": {
+        "zh": "字段",
+        "en": "Field",
+    },
+    "assistant_diff_current": {
+        "zh": "当前值",
+        "en": "Current",
+    },
+    "assistant_diff_recommended": {
+        "zh": "建议值",
+        "en": "Recommended",
+    },
+    "assistant_parse_failed": {
+        "zh": "⚠️ 无法解析结构化建议，请查看对话获取详情",
+        "en": "⚠️ Could not parse structured recommendation, check chat for details",
+    },
+    "assistant_sidebar_title": {
+        "zh": "🤖 智能助手",
+        "en": "🤖 Smart Assistant",
+    },
+    "assistant_data_section_title": {
+        "zh": "📂 数据工作区",
+        "en": "📂 Data Workspace",
+    },
+
+    # ==================== Phase 5A: 自定义模型 ====================
+    "custom_model_label": {
+        "zh": "自定义模型名称 / 路径",
+        "en": "Custom Model Name / Path",
+    },
+    "use_custom_model_label": {
+        "zh": "使用自定义模型（HuggingFace 或本地路径）",
+        "en": "Use custom model (HuggingFace or local path)",
+    },
+    "custom_model_placeholder": {
+        "zh": "输入 HuggingFace 模型名 (org/model) 或本地绝对路径",
+        "en": "Enter HuggingFace model name (org/model) or local absolute path",
+    },
+    "custom_model_validation_empty": {
+        "zh": "⚠️ 自定义模型名不能为空",
+        "en": "⚠️ Custom model name cannot be empty",
+    },
+    "custom_model_validation_ok": {
+        "zh": "✅ 自定义模型将用于命令生成",
+        "en": "✅ Custom model will be used for command generation",
+    },
+
+    # ==================== Phase 8-2: 结果对比筛选 ====================
+    "compare_filter_mode": {
+        "zh": "按模式筛选",
+        "en": "Filter by Mode",
+    },
 }
 
 

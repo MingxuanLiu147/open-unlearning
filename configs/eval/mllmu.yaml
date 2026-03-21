@@ -1,0 +1,8 @@
+benchmark: mllmu
+data_dir: data/MLLMU-Bench
+forget_split_ratio: 5
+output_dir: saves/mm_eval/mllmu
+tasks:
+  - classification
+  - generation
+max_new_tokens: 50

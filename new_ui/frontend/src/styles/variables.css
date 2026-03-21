@@ -1,0 +1,93 @@
+/* ═══ Light Theme (default) ═══ */
+:root,
+:root[data-theme="light"] {
+  --bg-body: #f7f8fa;
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-sidebar: #1e293b;
+  --bg-copilot: #f1f5f9;
+  --bg-input: #ffffff;
+  --bg-code: #f1f5f9;
+
+  --text-primary: #1a1a2e;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --text-inverse: #f1f5f9;
+
+  --border-color: #e2e8f0;
+  --border-card: #e2e8f0;
+  --border-focus: #3b82f6;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+
+  --accent-primary: #3b82f6;
+  --accent-primary-soft: #dbeafe;
+  --accent-success: #10b981;
+  --accent-success-soft: #d1fae5;
+  --accent-warning: #f59e0b;
+  --accent-warning-soft: #fef3c7;
+  --accent-danger: #ef4444;
+  --accent-danger-soft: #fee2e2;
+
+  --mode-unlearn: #8b5cf6;
+  --mode-unlearn-soft: #ede9fe;
+  --mode-inject: #06b6d4;
+  --mode-inject-soft: #cffafe;
+  --mode-edit: #f97316;
+  --mode-edit-soft: #ffedd5;
+  --mode-eval: #6366f1;
+  --mode-eval-soft: #e0e7ff;
+
+  --topbar-height: 56px;
+  --sidebar-width: 64px;
+  --copilot-width: 360px;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --font-sans: 'IBM Plex Sans', 'IBM Plex Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Menlo', monospace;
+
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+}
+
+/* ═══ Dark Theme ═══ */
+:root[data-theme="dark"] {
+  --bg-body: #0f172a;
+  --bg-surface: #1e293b;
+  --bg-card: #1e293b;
+  --bg-card-hover: #273548;
+  --bg-sidebar: #0f172a;
+  --bg-copilot: #1e293b;
+  --bg-input: #1e293b;
+  --bg-code: #0f172a;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #1a1a2e;
+
+  --border-color: #334155;
+  --border-card: #334155;
+  --border-focus: #60a5fa;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+
+  --accent-primary-soft: #1e3a5f;
+  --accent-success-soft: #064e3b;
+  --accent-warning-soft: #78350f;
+  --accent-danger-soft: #7f1d1d;
+
+  --mode-unlearn-soft: #2e1065;
+  --mode-inject-soft: #164e63;
+  --mode-edit-soft: #7c2d12;
+  --mode-eval-soft: #312e81;
+}

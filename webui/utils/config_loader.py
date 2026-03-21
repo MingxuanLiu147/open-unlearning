@@ -8,7 +8,7 @@
 
 import os
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 import yaml
 
 
@@ -63,6 +63,73 @@ class ConfigLoader:
                 return yaml.safe_load(f)
         except Exception:
             return None
+
+    def _collect_handlers(self, node: Any) -> List[str]:
+        """递归提取配置中的 handler 名称。"""
+        if isinstance(node, dict):
+            handlers = []
+            handler = node.get("handler")
+            if isinstance(handler, str):
+                handlers.append(handler)
+            for value in node.values():
+                handlers.extend(self._collect_handlers(value))
+            return handlers
+        if isinstance(node, list):
+            handlers = []
+            for value in node:
+                handlers.extend(self._collect_handlers(value))
+            return handlers
+        return []
+
+    def _infer_inject_split(self, config_name: str) -> str:
+        """根据 inject 配置文件名推断所属 split。"""
+        lowered = config_name.lower()
+        if "_analysis_" in lowered or lowered.endswith("_analysis_inject"):
+            return "analysis"
+        if "_eval_" in lowered or lowered.endswith("_eval_inject"):
+            return "eval"
+        return "train"
+
+    def _scan_dataset_configs(
+        self,
+        split: str,
+        handler_whitelist: Optional[Set[str]] = None,
+    ) -> List[str]:
+        """按 split 和 handler 扫描数据集配置。"""
+        datasets_dir = self.configs_dir / "data" / "datasets"
+        if not datasets_dir.exists():
+            return []
+
+        matches = []
+        for yaml_file in datasets_dir.glob("*.yaml"):
+            cfg = self._load_yaml(yaml_file)
+            if not isinstance(cfg, dict):
+                continue
+
+            split_cfg = cfg.get(split)
+            if isinstance(split_cfg, dict):
+                if handler_whitelist is not None:
+                    handlers = set(self._collect_handlers(split_cfg))
+                    if not handlers.intersection(handler_whitelist):
+                        continue
+                matches.append(yaml_file.stem)
+                continue
+
+            # 兼容 unlearn 风格的单层数据集配置：
+            #   DatasetName:
+            #     handler: AlpacaDataset
+            #     args: ...
+            if self._infer_inject_split(yaml_file.stem) != split:
+                continue
+
+            if handler_whitelist is not None:
+                handlers = set(self._collect_handlers(cfg))
+                if not handlers.intersection(handler_whitelist):
+                    continue
+
+            matches.append(yaml_file.stem)
+
+        return sorted(matches)
     
     def get_models(self) -> List[str]:
         """获取可用模型列表
@@ -142,9 +209,13 @@ class ConfigLoader:
             # Edit 需要编辑数据集
             result["edit"] = [d for d in all_datasets if "edit" in d.lower()]
         elif mode == "inject":
-            # Inject 需要训练数据集
-            result["train"] = [d for d in all_datasets if "inject" in d.lower() 
-                              or "alpaca" in d.lower() or "custom" in d.lower()]
+            # Inject 按配置内容识别，避免依赖文件名约定。
+            inject_handlers = {"InjectDataset", "AlpacaDataset", "ShareGPTDataset"}
+            result["train"] = self._scan_dataset_configs("train", inject_handlers)
+            result["eval"] = self._scan_dataset_configs("eval", inject_handlers)
+            result["analysis"] = self._scan_dataset_configs(
+                "analysis", inject_handlers
+            )
         else:
             result["all"] = sorted(all_datasets)
         

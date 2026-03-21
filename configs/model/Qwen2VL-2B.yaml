@@ -1,0 +1,10 @@
+model_family: qwen2vl
+model_path: Qwen/Qwen2-VL-2B-Instruct
+processor_path: Qwen/Qwen2-VL-2B-Instruct
+torch_dtype: bfloat16
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 16
+  dropout: 0.05

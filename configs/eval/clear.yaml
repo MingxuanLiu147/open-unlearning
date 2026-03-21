@@ -1,0 +1,3 @@
+benchmark: clear
+data_dir: data/CLEAR
+output_dir: saves/mm_eval/clear

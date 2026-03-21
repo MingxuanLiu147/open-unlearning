@@ -1,8 +1,7 @@
 # AKEW CounterFact 子集配置
 
-edit:
-  AKEW_counterfact_edit:
-    handler: AKEWDataset
-    args:
-      subset: "counterfact"
-      max_length: 512
+AKEW_counterfact_edit:
+  handler: AKEWDataset
+  args:
+    subset: "counterfact"
+    max_length: 512

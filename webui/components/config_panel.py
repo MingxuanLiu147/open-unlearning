@@ -55,14 +55,25 @@ def create_config_panel(config_loader: ConfigLoader) -> Dict[str, Any]:
                 info=t("experiment_info")
             )
 
-        # 模型选择
+        # 模型选择（预置 + 自定义）
         with gr.Group():
             models = config_loader.get_models()
             components["model"] = gr.Dropdown(
                 choices=models,
                 value="Qwen2.5-7B-Instruct" if "Qwen2.5-7B-Instruct" in models else (models[0] if models else None),
                 label=t("model_label"),
-                info=t("model_info")
+                info=t("model_info"),
+                allow_custom_value=True,
+            )
+            components["custom_model_input"] = gr.Textbox(
+                label=t("custom_model_label"),
+                placeholder=t("custom_model_placeholder"),
+                visible=False,
+                lines=1,
+            )
+            components["use_custom_model"] = gr.Checkbox(
+                label=t("use_custom_model_label"),
+                value=False,
             )
 
         # 方法选择
