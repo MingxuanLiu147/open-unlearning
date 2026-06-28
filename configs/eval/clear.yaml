@@ -1,3 +1,15 @@
 benchmark: clear
 data_dir: data/CLEAR
+forget_split_ratio: 5
 output_dir: saves/mm_eval/clear
+tasks:
+  - classification
+  - generation
+splits:
+  - forget
+  - retain
+  - realface
+  - realworld
+retain_classification_folder: retain_perturbed
+max_new_tokens: 50
+max_records: null

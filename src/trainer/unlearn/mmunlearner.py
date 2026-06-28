@@ -33,3 +33,8 @@ class MMUnlearner(MMGradDiff):
 
         kwargs["grad_mask"] = loaded_mask
         super().__init__(*args, **kwargs)
+
+    def compute_forget_loss(self, model, batch) -> torch.Tensor:
+        """Scale forget loss to match the upstream MMUnlearner objective."""
+        outputs = model(**batch)
+        return -self.forget_alpha * outputs.loss

@@ -1,0 +1,89 @@
+\section{Evaluation}
+\label{sec:eval}
+
+We evaluate Know-Surgery on standard benchmarks to verify correctness and demonstrate cross-paradigm comparison capabilities.
+
+\subsection{Knowledge Editing}
+
+We compare representative editing methods on CounterFact and ZsRE. Metrics follow the standard four-dimensional evaluation: Reliability (edit success rate), Generalization (rephrase accuracy), Locality (unrelated knowledge preservation), and Portability (reasoning transfer).
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Method} & \textbf{Rel.} & \textbf{Gen.} & \textbf{Loc.} & \textbf{Port.} \\
+\midrule
+\multicolumn{5}{c}{\textit{CounterFact}} \\
+\midrule
+ROME & -- & -- & -- & -- \\
+MEMIT & -- & -- & -- & -- \\
+MEND & -- & -- & -- & -- \\
+AlphaEdit & -- & -- & -- & -- \\
+GRACE & -- & -- & -- & -- \\
+IKE & -- & -- & -- & -- \\
+\midrule
+\multicolumn{5}{c}{\textit{ZsRE}} \\
+\midrule
+ROME & -- & -- & -- & -- \\
+MEMIT & -- & -- & -- & -- \\
+MEND & -- & -- & -- & -- \\
+AlphaEdit & -- & -- & -- & -- \\
+GRACE & -- & -- & -- & -- \\
+IKE & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\caption{Knowledge editing results. Rel.=Reliability, Gen.=Generalization, Loc.=Locality, Port.=Portability. Values are percentages. \textit{[TO BE FILLED after experiments]}}
+\label{tab:edit}
+\end{table}
+
+\subsection{Machine Unlearning}
+
+We evaluate unlearning methods on the TOFU benchmark (forget10 split). Forget Quality measures how well the model forgets target data; Model Utility measures retained performance on non-target data.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Method} & \textbf{Forget Quality} & \textbf{Model Utility} \\
+\midrule
+GradAscent & -- & -- \\
+GradDiff & -- & -- \\
+NPO & -- & -- \\
+DPO & -- & -- \\
+SimNPO & -- & -- \\
+RMU & -- & -- \\
+CEU & -- & -- \\
+PDU & -- & -- \\
+WGA & -- & -- \\
+\bottomrule
+\end{tabular}
+\caption{Machine unlearning results on TOFU (forget10). \textit{[TO BE FILLED]}}
+\label{tab:unlearn}
+\end{table}
+
+\subsection{Comparison with Existing Toolkits}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Feature} & \textbf{Ours} & \textbf{EasyEdit} & \textbf{OpenUnl.} \\
+\midrule
+Edit methods & 15 & 15+ & 0 \\
+Unlearn methods & 14 & 0 & 11 \\
+Inject methods & 6 & 1 & 5 \\
+Knowledge types & 5 & 1--2 & N/A \\
+Multimodal & \checkmark & \checkmark & \checkmark \\
+Unified framework & \checkmark & $\times$ & $\times$ \\
+Config system & Hydra & Py API & Hydra \\
+Web UI & \checkmark & \checkmark & $\times$ \\
+Model configs & 42 & 10+ & 10+ \\
+\bottomrule
+\end{tabular}
+\caption{Comparison with existing toolkits.}
+\label{tab:compare}
+\end{table}

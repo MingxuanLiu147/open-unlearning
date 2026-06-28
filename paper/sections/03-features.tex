@@ -1,0 +1,81 @@
+\section{Key Features}
+\label{sec:features}
+
+\subsection{Comprehensive Method Library}
+
+Table~\ref{tab:methods} summarizes the methods integrated in Know-Surgery across three operation categories, totaling 35 text-based methods plus 13 multimodal methods.
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}llp{3.8cm}@{}}
+\toprule
+\textbf{Op.} & \textbf{Category} & \textbf{Methods} \\
+\midrule
+\multirow{5}{*}{\rotatebox{90}{Edit (15)}}
+ & Locate-Edit & ROME, MEMIT, MEMIT\_M, AlphaEdit \\
+ & Memory & GRACE, WISE, IKE, SERAC \\
+ & Meta-learn & MEND, MALMEN, InstructEdit \\
+ & Unified & UniKE, NMKE \\
+ & Unstruct. & UNKE, AnyEdit \\
+\midrule
+\multirow{4}{*}{\rotatebox{90}{Unl. (14)}}
+ & Gradient & GradAscent, GradDiff, SGA \\
+ & Preference & NPO, DPO, SimNPO \\
+ & Represent. & RMU, FLAT, SOUL \\
+ & Others & UNDIAL, CEU, SatImp, WGA, PDU \\
+\midrule
+Inj. (6) & PEFT & LoRA, DoRA, AdaLoRA, LoReFT, BREP \\
+\midrule
+\multirow{2}{*}{MM (13)}
+ & MM Unl. & MMGradAsc., MMNPO, MMVKD, ... (7) \\
+ & MM Edit & MM-IKE, MM-UniKE, ... (6) \\
+\bottomrule
+\end{tabular}
+\caption{Methods supported in Know-Surgery. MEMIT\_M = MEMIT\_Merge.}
+\label{tab:methods}
+\end{table}
+
+\subsection{Multi-type Knowledge Coverage}
+
+Unlike existing tools that focus primarily on factual triplets, Know-Surgery covers five knowledge types through 8+ editing datasets:
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lp{2.6cm}p{2.8cm}@{}}
+\toprule
+\textbf{Type} & \textbf{Datasets} & \textbf{Methods} \\
+\midrule
+Factual & CF, ZsRE, LEME & ROME, MEMIT, AlphaEdit \\
+Event & ELKEN, UnKE, AKEW & MEMIT, AnyEdit \\
+Concept & ConceptEdit & ROME, AlphaEdit \\
+Proced. & EditEvery & AnyEdit, UNKE \\
+Rule & RuleTaker, FOLIO & BREP, LoReFT \\
+\bottomrule
+\end{tabular}
+\caption{Knowledge type coverage. CF=CounterFact.}
+\label{tab:knowledge}
+\end{table}
+
+\subsection{Multimodal Extension}
+
+Know-Surgery extends to multimodal scenarios through two pathways:
+\begin{itemize}
+\setlength\itemsep{0pt}
+\item \textbf{MM Unlearning} (7 methods): MMGradAscent, MMGradDiff, MMKLMin, MMNPO, MMRetainFT, MMUnlearner, MMVKD, evaluated on CLEAR and MLLMU-Bench.
+\item \textbf{MM Editing} (6 methods): MM-IKE, MM-GRACE, MM-WISE, MM-MEND, MM-SERAC, MM-UniKE, extending text editing methods to vision-language models (InternVL, LLaVA, Qwen-VL) via a shared \texttt{MMEditMixin} base class.
+\end{itemize}
+
+\subsection{Three-Step Extension Protocol}
+
+Adding a new component requires only three steps:
+\begin{enumerate}
+\setlength\itemsep{0pt}
+\item \textbf{Implement}: Write a Python class inheriting the appropriate base class (\texttt{EditTrainer}, \texttt{FinetuneTrainer}, or \texttt{InjectTrainer}).
+\item \textbf{Register}: Add one line to the registry (\texttt{\_register\_trainer(MyMethod)}).
+\item \textbf{Configure}: Create a YAML file specifying the handler name and method-specific hyperparameters.
+\end{enumerate}
+No changes to the core framework, data loading, or evaluation code are needed.

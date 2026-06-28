@@ -2,6 +2,10 @@
 
 通过 Hydra 配置驱动，加载多模态模型 + MLLMU 数据 + 遗忘方法，执行训练并保存 checkpoint。
 
+注意：
+    当前环境下需要在导入 Hydra 前先导入 torch，否则直接执行
+    `python src/mm_train.py ...` 可能导致 CUDA 不可用。
+
 使用示例：
     python src/mm_train.py \
         model=Qwen2VL-2B \
@@ -12,6 +16,7 @@
 import logging
 import sys
 
+import torch
 import hydra
 from omegaconf import DictConfig
 
@@ -24,7 +29,9 @@ MM_TRAINER_REGISTRY = {
     "MMGradDiff": "trainer.unlearn.mm_grad_diff.MMGradDiff",
     "MMKLMin": "trainer.unlearn.mm_kl_min.MMKLMin",
     "MMNPO": "trainer.unlearn.mm_npo.MMNPO",
+    "MMRetainFT": "trainer.unlearn.mm_retain_ft.MMRetainFT",
     "MMUnlearner": "trainer.unlearn.mmunlearner.MMUnlearner",
+    "MMVKD": "trainer.unlearn.mm_vkd.MMVKD",
 }
 
 
@@ -35,18 +42,75 @@ def _import_trainer_cls(dotpath: str):
     return getattr(mod, cls_name)
 
 
+def _resolve_runtime_device(cfg: DictConfig) -> str:
+    device = str(cfg.get("device", "cuda"))
+    require_cuda = bool(cfg.get("require_cuda", device.startswith("cuda")))
+    cuda_available = torch.cuda.is_available()
+
+    logger.info(
+        "Runtime device check: device=%s, require_cuda=%s, cuda_available=%s, cuda_device_count=%s",
+        device,
+        require_cuda,
+        cuda_available,
+        torch.cuda.device_count(),
+    )
+
+    if device.startswith("cuda") and not cuda_available:
+        hint = (
+            "CUDA is not available for mm_train. "
+            "In this environment avoid `python -u`, stdout/stderr redirection, "
+            "`CUDA_VISIBLE_DEVICES=*`, and `PYTORCH_ALLOC_CONF=expandable_segments:True`. "
+            "If you intentionally want CPU, override with `device=cpu require_cuda=false`."
+        )
+        if require_cuda:
+            raise RuntimeError(hint)
+        logger.warning("%s", hint)
+        return "cpu"
+
+    return device
+
+
+def _get_data_loaders(cfg: DictConfig, processor):
+    benchmark = str(cfg.data.get("benchmark", "mllmu")).lower()
+    if benchmark == "clear":
+        from data.clear_dataset import get_clear_data
+
+        logger.info("Loading CLEAR data...")
+        return get_clear_data(cfg.data, processor)
+
+    if benchmark == "fiubench":
+        from data.fiubench_dataset import get_fiubench_data
+
+        logger.info("Loading FIUBench data...")
+        return get_fiubench_data(cfg.data, processor)
+
+    from data.multimodal import get_mm_data
+
+    logger.info("Loading MLLMU data...")
+    return get_mm_data(cfg.data, processor)
+
+
 @hydra.main(version_base=None, config_path="../configs", config_name="mm_train.yaml")
 def main(cfg: DictConfig):
     from model.multimodal import get_mm_model
-    from data.multimodal import get_mm_data
+
+    device = _resolve_runtime_device(cfg)
+    trainer_name = cfg.trainer.handler
+
+    if trainer_name == "MMUnlearner" and bool(cfg.model.get("lora", {}).get("enabled", False)):
+        raise ValueError(
+            "MMUnlearner should run with `model.lora.enabled=false` so grad masks and "
+            "trainable parameters stay in the same parameter space."
+        )
 
     logger.info("Loading multimodal model...")
     model, processor = get_mm_model(cfg.model)
+    if device.startswith("cuda"):
+        model = model.to(device)
+        logger.info("Moved training model to %s", device)
 
-    logger.info("Loading MLLMU data...")
-    forget_loader, retain_loader = get_mm_data(cfg.data, processor)
+    forget_loader, retain_loader = _get_data_loaders(cfg, processor)
 
-    trainer_name = cfg.trainer.handler
     trainer_dotpath = MM_TRAINER_REGISTRY.get(trainer_name)
     if trainer_dotpath is None:
         raise ValueError(
@@ -60,10 +124,10 @@ def main(cfg: DictConfig):
 
     output_dir = cfg.get("output_dir", "saves/mm_unlearn")
 
-    if trainer_name == "MMNPO":
+    if trainer_name in ("MMNPO", "MMVKD"):
         oracle_path = method_args.pop("oracle_model_path", None)
         if oracle_path is None:
-            raise ValueError("MMNPO requires method_args.oracle_model_path")
+            raise ValueError(f"{trainer_name} requires method_args.oracle_model_path")
         from model.multimodal import get_mm_model as _load
         from omegaconf import OmegaConf
         oracle_cfg = OmegaConf.create({

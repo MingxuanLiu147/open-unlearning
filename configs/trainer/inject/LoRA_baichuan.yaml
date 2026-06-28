@@ -1,0 +1,18 @@
+# LoRA for Baichuan2
+# Baichuan2 uses W_pack (fused QKV) instead of separate q/k/v_proj
+
+defaults:
+  - inject/base_inject@_here_
+  - _self_
+
+handler: LoRATrainer
+
+method_args:
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  target_modules:
+    - W_pack
+    - o_proj
+  bias: none
+  task_type: CAUSAL_LM

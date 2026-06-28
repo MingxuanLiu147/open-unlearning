@@ -1,0 +1,10 @@
+# VLKEB 多模态知识编辑基准 (NeurIPS 2024)
+# 含 1-4 hop 多跳推理 portability 评估
+
+VLKEB_eval:
+  handler: VLKEBDataset
+  args:
+    subset: "eval"
+    image_dir: "data/edit/vlkeb/VLKEB_images"
+    rephrase_image_dir: "data/edit/vlkeb/VLKEB_images"
+    max_length: 512

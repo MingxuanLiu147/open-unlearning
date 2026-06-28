@@ -22,6 +22,16 @@ class MMGradDiff(MMUnlearnBase):
         outputs = model(**batch)
         return -outputs.loss
 
+    def compute_forget_loss(self, model, batch) -> torch.Tensor:
+        """Compute the forget-side objective for alternating training."""
+        outputs = model(**batch)
+        return -outputs.loss
+
+    def compute_retain_loss(self, model, batch) -> torch.Tensor:
+        """Compute the retain-side objective for alternating training."""
+        outputs = model(**batch)
+        return outputs.loss
+
     def train(self):
         if self.retain_loader is None:
             raise ValueError("MMGradDiff requires retain_loader")
@@ -51,8 +61,7 @@ class MMGradDiff(MMUnlearnBase):
                         forget_batch = next(forget_iter)
 
                     with self.accelerator.accumulate(self.model):
-                        forget_out = self.model(**forget_batch)
-                        loss_forget = -forget_out.loss
+                        loss_forget = self.compute_forget_loss(self.model, forget_batch)
                         self.accelerator.backward(loss_forget)
                         self._apply_grad_mask()
                         if self.accelerator.sync_gradients:
@@ -64,8 +73,7 @@ class MMGradDiff(MMUnlearnBase):
                     total_forget_loss += loss_forget.detach().item()
 
                 with self.accelerator.accumulate(self.model):
-                    retain_out = self.model(**retain_batch)
-                    loss_retain = retain_out.loss
+                    loss_retain = self.compute_retain_loss(self.model, retain_batch)
                     self.accelerator.backward(loss_retain)
                     self._apply_grad_mask()
                     if self.accelerator.sync_gradients:

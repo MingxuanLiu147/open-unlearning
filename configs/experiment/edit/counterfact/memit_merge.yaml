@@ -1,0 +1,16 @@
+# CounterFact + MEMIT-Merge 批量编辑实验
+# 验证 same-subject batch editing 修复 (46% -> 98%)
+
+defaults:
+  - override /model: Qwen2.5-7B-Instruct
+  - override /trainer: edit/MEMIT_Merge
+  - override /data: edit
+  - override /eval: edit
+
+data:
+  edit:
+    CounterFact_edit:
+      handler: CounterFactDataset
+      args:
+        split: "train"
+        max_length: 512

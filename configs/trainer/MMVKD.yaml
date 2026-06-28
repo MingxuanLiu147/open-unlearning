@@ -1,0 +1,15 @@
+# MMVKD: Visual Knowledge Distillation for multimodal unlearning
+# Reference: arXiv:2512.11325
+# Requires oracle_model_path (same pattern as MMNPO)
+handler: MMVKD
+args:
+  lr: 2e-5
+  num_epochs: 5
+  max_grad_norm: 1.0
+  gradient_accumulation_steps: 1
+  warmup_steps: 0
+method_args:
+  oracle_model_path: null
+  alpha: 1.0
+  beta: 1.0
+  freeze_llm: true

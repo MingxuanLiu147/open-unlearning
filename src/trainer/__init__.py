@@ -27,6 +27,10 @@ from trainer.unlearn.ceu import CEU
 from trainer.unlearn.satimp import SatImp
 from trainer.unlearn.wga import WGA
 from trainer.unlearn.pdu import PDU
+from trainer.unlearn.sga import SGA
+from trainer.unlearn.flat import FLAT
+from trainer.unlearn.soul import SOUL
+from trainer.unlearn.sfron_trainer import SFRON
 
 # Knowledge Injection 训练器
 from trainer.inject.base import InjectTrainer
@@ -41,6 +45,26 @@ from trainer.edit.base import EditTrainer
 from trainer.edit.rome import ROMEEditor
 from trainer.edit.memit import MEMITEditor
 from trainer.edit.mend import MENDEditor
+from trainer.edit.alphaedit import AlphaEditEditor
+from trainer.edit.unke_editor import UNKEEditor
+from trainer.edit.grace import GRACEEditor
+from trainer.edit.wise import WISEEditor
+from trainer.edit.ike import IKEEditor
+from trainer.edit.serac import SERACEditor
+from trainer.edit.malmen import MALMENEditor
+from trainer.edit.instructedit import InstructEditEditor
+from trainer.edit.anyedit import AnyEditEditor
+from trainer.edit.unike import UniKEEditor
+from trainer.edit.nmke import NMKEEditor
+from trainer.edit.memit_merge import MEMITMergeEditor
+
+# Multimodal Knowledge Editing 训练器
+from trainer.edit.mm_ike import MMIKEEditor
+from trainer.edit.mm_grace import MMGRACEEditor
+from trainer.edit.mm_wise import MMWISEEditor
+from trainer.edit.mm_mend import MMMENDEditor
+from trainer.edit.mm_serac import MMSERACEditor
+from trainer.edit.mm_unike import MMUniKEEditor
 
 
 import logging
@@ -131,6 +155,10 @@ _register_trainer(CEU)
 _register_trainer(SatImp)
 _register_trainer(WGA)
 _register_trainer(PDU)
+_register_trainer(SGA)
+_register_trainer(FLAT)
+_register_trainer(SOUL)
+_register_trainer(SFRON)
 
 # Register Knowledge Injection Trainer
 _register_trainer(InjectTrainer)
@@ -145,3 +173,23 @@ _register_trainer(EditTrainer)
 _register_trainer(ROMEEditor)
 _register_trainer(MEMITEditor)
 _register_trainer(MENDEditor)
+_register_trainer(AlphaEditEditor)
+_register_trainer(UNKEEditor)
+_register_trainer(GRACEEditor)
+_register_trainer(WISEEditor)
+_register_trainer(IKEEditor)
+_register_trainer(SERACEditor)
+_register_trainer(MALMENEditor)
+_register_trainer(InstructEditEditor)
+_register_trainer(AnyEditEditor)
+_register_trainer(UniKEEditor)
+_register_trainer(NMKEEditor)
+_register_trainer(MEMITMergeEditor)
+
+# Register Multimodal Knowledge Editing Trainer
+_register_trainer(MMIKEEditor)
+_register_trainer(MMGRACEEditor)
+_register_trainer(MMWISEEditor)
+_register_trainer(MMMENDEditor)
+_register_trainer(MMSERACEditor)
+_register_trainer(MMUniKEEditor)

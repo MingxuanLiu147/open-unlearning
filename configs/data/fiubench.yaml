@@ -1,0 +1,9 @@
+# FIUBench multimodal data config
+# Reference: ICLR 2025, arXiv:2411.03554
+benchmark: fiubench
+data_dir: data/FIUBench
+forget_split_ratio: 10
+batch_size: 4
+ans_only: false
+mode: unlearn
+max_samples: null

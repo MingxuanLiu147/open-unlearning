@@ -1,0 +1,9 @@
+# MQuAKE 多跳推理评估指标
+
+multihop:
+  handler: MQuAKEMultiHopEvaluator
+  args:
+    metric_name: multihop
+    max_new_tokens: 32
+    use_exact_match: true
+    use_token_accuracy: false

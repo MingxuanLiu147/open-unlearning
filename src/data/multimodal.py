@@ -4,6 +4,7 @@
 collate 使用 transformers 原生 processor.apply_chat_template，不依赖 qwen_vl_utils。
 """
 
+import glob
 import json
 import logging
 import os
@@ -14,30 +15,60 @@ import pandas as pd
 import torch
 from omegaconf import DictConfig
 from PIL import Image
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import ConcatDataset, DataLoader, Dataset, Subset
 
 logger = logging.getLogger(__name__)
+
+
+def load_mllmu_frame(path_or_dir: str) -> pd.DataFrame:
+    """Load one parquet file or a parquet directory into a single dataframe."""
+    if not os.path.exists(path_or_dir):
+        raise FileNotFoundError(f"MLLMU data path not found: {path_or_dir}")
+
+    if os.path.isfile(path_or_dir):
+        return pd.read_parquet(path_or_dir)
+
+    parquet_files = sorted(glob.glob(os.path.join(path_or_dir, "*.parquet")))
+    if not parquet_files:
+        raise FileNotFoundError(f"No parquet files found under {path_or_dir}")
+
+    frames = [pd.read_parquet(parquet_file) for parquet_file in parquet_files]
+    return pd.concat(frames, ignore_index=True)
+
+
+def _maybe_limit_dataset(dataset: Dataset, max_samples: int | None) -> Dataset:
+    if max_samples is None or max_samples <= 0 or len(dataset) <= max_samples:
+        return dataset
+    return Subset(dataset, range(max_samples))
 
 
 class MLLMUDataset(Dataset):
     """MLLMU-Bench 数据集，从 Parquet 读取图像+QA 对并展平为单条样本。"""
 
-    def __init__(self, parquet_path: str):
+    def __init__(self, parquet_path: str, *, text_only: bool = False):
         super().__init__()
-        df = pd.read_parquet(parquet_path)
+        self.text_only = text_only
+        df = load_mllmu_frame(parquet_path)
         self.samples = self._flatten(df)
-        logger.info("MLLMUDataset loaded %d samples from %s", len(self.samples), parquet_path)
+        logger.info(
+            "MLLMUDataset loaded %d samples from %s (text_only=%s)",
+            len(self.samples),
+            parquet_path,
+            text_only,
+        )
 
     def _flatten(self, df: pd.DataFrame) -> List[Dict]:
         data = []
         has_metadata = "metadata" in df.columns
         for idx, row in df.iterrows():
-            image_bytes = row["image"].get("bytes")
-            try:
-                image = Image.open(BytesIO(image_bytes)).convert("RGB")
-            except Exception as e:
-                logger.warning("Skipping row %d: image decode error: %s", idx, e)
-                continue
+            image = None
+            if not self.text_only:
+                image_bytes = row["image"].get("bytes")
+                try:
+                    image = Image.open(BytesIO(image_bytes)).convert("RGB")
+                except Exception as e:
+                    logger.warning("Skipping row %d: image decode error: %s", idx, e)
+                    continue
 
             if has_metadata:
                 try:
@@ -63,11 +94,24 @@ class MLLMUDataset(Dataset):
         return self.samples[idx]
 
 
+def _has_chat_template(processor) -> bool:
+    """Check if the processor supports apply_chat_template (e.g. Qwen-VL, LLaVA)."""
+    return hasattr(processor, "apply_chat_template") and callable(
+        getattr(processor, "apply_chat_template")
+    )
+
+
+def _format_text_plain(question: str, answer: str) -> str:
+    """Plain text fallback for processors without chat templates (e.g. BLIP-2)."""
+    return f"Question: {question} Answer: {answer}"
+
+
 def mm_collate_fn(examples, processor, ans_only=False):
     """将 MLLMUDataset 样本列表编码为模型可用的 batch。
 
-    使用 processor.apply_chat_template 构建 messages，
-    再调用 processor() 编码图像+文本，不依赖 qwen_vl_utils。
+    对于支持 chat template 的 processor（Qwen-VL / LLaVA / InternVL 等），
+    使用 processor.apply_chat_template 构建 messages。
+    对于不支持的 processor（BLIP-2 等），回退到纯文本拼接。
 
     Args:
         examples: 样本列表，每个含 image / question / answer。
@@ -77,24 +121,30 @@ def mm_collate_fn(examples, processor, ans_only=False):
     images = []
     texts = []
     answer_tokens_list = []
+    use_chat_template = _has_chat_template(processor)
 
     for ex in examples:
         image = ex["image"]
         question = ex["question"]
         answer = ex["answer"]
 
-        user_content = [{"type": "image"}, {"type": "text", "text": question}]
-        if image is not None:
-            images.append(image)
-        else:
-            user_content = [{"type": "text", "text": question}]
+        if use_chat_template:
+            user_content = [{"type": "image"}, {"type": "text", "text": question}]
+            if image is not None:
+                images.append(image)
+            else:
+                user_content = [{"type": "text", "text": question}]
 
-        messages = [
-            {"role": "user", "content": user_content},
-            {"role": "assistant", "content": [{"type": "text", "text": answer}]},
-        ]
-        text = processor.apply_chat_template(messages, add_generation_prompt=False)
-        texts.append(text.strip())
+            messages = [
+                {"role": "user", "content": user_content},
+                {"role": "assistant", "content": [{"type": "text", "text": answer}]},
+            ]
+            text = processor.apply_chat_template(messages, add_generation_prompt=False)
+            texts.append(text.strip())
+        else:
+            if image is not None:
+                images.append(image)
+            texts.append(_format_text_plain(question, answer))
 
         if ans_only:
             ans_tok = processor.tokenizer(answer, return_tensors="pt")["input_ids"][0][1:]
@@ -128,49 +178,144 @@ def mm_collate_fn(examples, processor, ans_only=False):
     return dict(batch)
 
 
-def get_mm_data(data_cfg: DictConfig, processor):
-    """根据 Hydra 数据配置构建 forget / retain DataLoader。
-
-    Returns:
-        (forget_loader, retain_loader)，retain_loader 可能为 None。
-    """
-    data_dir = data_cfg.data_dir
-    forget_ratio = data_cfg.get("forget_split_ratio", 5)
-    batch_size = data_cfg.get("batch_size", 4)
-    ans_only = data_cfg.get("ans_only", False)
-
-    forget_parquet = os.path.join(
-        data_dir, f"forget_{forget_ratio}", "train-00000-of-00001.parquet"
-    )
-    forget_dataset = MLLMUDataset(forget_parquet)
-    forget_loader = DataLoader(
-        forget_dataset,
+def _make_loader(dataset: Dataset, processor, *, batch_size: int, ans_only: bool, shuffle: bool) -> DataLoader:
+    return DataLoader(
+        dataset,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=shuffle,
         collate_fn=lambda x: mm_collate_fn(x, processor, ans_only=ans_only),
     )
 
-    retain_loader = None
-    retain_parquet_path = os.path.join(
-        data_dir, f"retain_{100 - forget_ratio}", "train-00000-of-00001.parquet"
-    )
-    if os.path.exists(retain_parquet_path):
-        retain_dataset = MLLMUDataset(retain_parquet_path)
-        retain_loader = DataLoader(
-            retain_dataset,
+
+def _resolve_mllmu_path(data_cfg: DictConfig, split_name: str) -> str:
+    data_dir = str(data_cfg.data_dir)
+    forget_ratio = int(data_cfg.get("forget_split_ratio", 5))
+    retain_ratio = 100 - forget_ratio
+    mapping = {
+        "forget": os.path.join(data_dir, f"forget_{forget_ratio}"),
+        "retain": os.path.join(data_dir, f"retain_{retain_ratio}"),
+        "retain_shared": os.path.join(data_dir, f"retain_{retain_ratio}"),
+        "retain_celebrity": str(
+            data_cfg.get("retain_set_parquet", os.path.join(data_dir, "Retain_Set"))
+        ),
+        "full": str(
+            data_cfg.get(
+                "full_set_parquet",
+                os.path.join(data_dir, "Full_Set", "train-00000-of-00001.parquet"),
+            )
+        ),
+    }
+    if split_name not in mapping:
+        raise ValueError(f"Unsupported MLLMU split_name={split_name}")
+    return mapping[split_name]
+
+
+def get_mm_data(data_cfg: DictConfig, processor):
+    """根据 Hydra 数据配置构建训练 DataLoader。
+
+    mode=unlearn:
+        返回 (forget_loader, retain_loader)
+    mode=reference:
+        返回 (reference_loader, None)，供 retain-only reference/oracle 流程复用。
+    """
+    mode = str(data_cfg.get("mode", "unlearn")).lower()
+    batch_size = int(data_cfg.get("batch_size", 4))
+    ans_only = bool(data_cfg.get("ans_only", False))
+    max_samples = data_cfg.get("max_samples")
+    max_samples = int(max_samples) if max_samples is not None else None
+
+    if mode == "reference":
+        source = str(data_cfg.get("reference_source", "retain")).lower()
+        text_only = bool(data_cfg.get("reference_text_only", False))
+        dataset = MLLMUDataset(_resolve_mllmu_path(data_cfg, source), text_only=text_only)
+        dataset = _maybe_limit_dataset(dataset, max_samples)
+        return _make_loader(
+            dataset,
+            processor,
             batch_size=batch_size,
+            ans_only=ans_only,
             shuffle=True,
-            collate_fn=lambda x: mm_collate_fn(x, processor, ans_only=ans_only),
+        ), None
+
+    forget_dataset = MLLMUDataset(_resolve_mllmu_path(data_cfg, "forget"))
+    forget_dataset = _maybe_limit_dataset(forget_dataset, max_samples)
+    forget_loader = _make_loader(
+        forget_dataset,
+        processor,
+        batch_size=batch_size,
+        ans_only=ans_only,
+        shuffle=True,
+    )
+
+    retain_loader = None
+    retain_path = _resolve_mllmu_path(data_cfg, "retain")
+    if os.path.exists(retain_path):
+        retain_dataset = MLLMUDataset(retain_path)
+        retain_dataset = _maybe_limit_dataset(retain_dataset, max_samples)
+        retain_loader = _make_loader(
+            retain_dataset,
+            processor,
+            batch_size=batch_size,
+            ans_only=ans_only,
+            shuffle=True,
         )
 
     full_parquet = data_cfg.get("full_set_parquet", None)
     if full_parquet and not retain_loader and os.path.exists(full_parquet):
-        retain_dataset = MLLMUDataset(full_parquet)
-        retain_loader = DataLoader(
+        retain_dataset = MLLMUDataset(str(full_parquet))
+        retain_dataset = _maybe_limit_dataset(retain_dataset, max_samples)
+        retain_loader = _make_loader(
             retain_dataset,
+            processor,
             batch_size=batch_size,
+            ans_only=ans_only,
             shuffle=True,
-            collate_fn=lambda x: mm_collate_fn(x, processor, ans_only=ans_only),
         )
 
     return forget_loader, retain_loader
+
+
+def get_mm_mask_data(data_cfg: DictConfig, processor) -> Dict[str, DataLoader]:
+    """构建 MLLMU 的三掩码工作流所需 DataLoader。"""
+    batch_size = int(data_cfg.get("mask_batch_size", data_cfg.get("batch_size", 4)))
+    ans_only = bool(data_cfg.get("mask_ans_only", True))
+    max_samples = data_cfg.get("mask_max_samples")
+    max_samples = int(max_samples) if max_samples is not None else None
+
+    forget_dataset = _maybe_limit_dataset(
+        MLLMUDataset(_resolve_mllmu_path(data_cfg, "forget")), max_samples
+    )
+    retain_dataset = _maybe_limit_dataset(
+        MLLMUDataset(_resolve_mllmu_path(data_cfg, "retain")), max_samples
+    )
+    full_text_dataset = _maybe_limit_dataset(
+        MLLMUDataset(_resolve_mllmu_path(data_cfg, "full"), text_only=True),
+        max_samples,
+    )
+
+    vision_preserve_dataset = retain_dataset
+    language_preserve_dataset = ConcatDataset([full_text_dataset, retain_dataset])
+
+    return {
+        "forget": _make_loader(
+            forget_dataset,
+            processor,
+            batch_size=batch_size,
+            ans_only=ans_only,
+            shuffle=True,
+        ),
+        "vision_preserve": _make_loader(
+            vision_preserve_dataset,
+            processor,
+            batch_size=batch_size,
+            ans_only=ans_only,
+            shuffle=True,
+        ),
+        "language_preserve": _make_loader(
+            language_preserve_dataset,
+            processor,
+            batch_size=batch_size,
+            ans_only=ans_only,
+            shuffle=True,
+        ),
+    }

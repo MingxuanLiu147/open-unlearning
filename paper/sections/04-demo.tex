@@ -1,0 +1,45 @@
+\section{Demonstration}
+\label{sec:demo}
+
+Know-Surgery provides two interfaces for interactive exploration.
+
+\paragraph{Command-Line Interface.}
+Users run experiments with a single command, combining model, method, and dataset through Hydra overrides:
+
+\begin{lstlisting}
+# Edit: ROME on CounterFact with Qwen2.5-7B
+python src/train.py mode=edit \
+  trainer=edit/ROME model=Qwen2.5-7B-Instruct \
+  experiment=edit/counterfact/default
+
+# Unlearn: SimNPO on TOFU
+python src/train.py mode=unlearn \
+  trainer=SimNPO model=Llama-3.2-1B-Instruct \
+  experiment=unlearn/tofu/default \
+  task_name=my_simnpo_run
+
+# Inject: LoRA on Alpaca
+python src/train.py mode=inject \
+  trainer=inject/LoRA model=Qwen2.5-7B-Instruct \
+  experiment=inject/alpaca/default
+
+# Evaluate a saved checkpoint
+python src/eval.py \
+  experiment=eval/tofu/default \
+  model.model_args.pretrained_model_name_or_path=\
+    saves/unlearn/my_simnpo_run
+\end{lstlisting}
+
+\paragraph{Web Interface.}
+A Flask+Vue web UI (\texttt{new\_ui/}) allows users to select models, methods, and datasets from dropdown menus, configure hyperparameters, launch experiments, and compare results visually. The frontend is built with Vite + TypeScript and communicates with a Python Flask backend via REST APIs.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.95\columnwidth}{\centering\textit{[WebUI screenshot placeholder]}\\
+\small Configuration panel + Results comparison view}}
+\caption{Know-Surgery web interface for interactive experiment management.}
+\label{fig:webui}
+\end{figure}
+
+\paragraph{Demo Video.}
+A 2.5-minute screencast demonstrates the full workflow: selecting a method, configuring an experiment, running it, and analyzing results through both CLI and web interfaces.

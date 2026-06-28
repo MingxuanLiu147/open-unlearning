@@ -1,0 +1,10 @@
+method	gpu	task_name	train_exit	eval_exit	status
+GradAscent	0	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_GradAscent	0	1	eval_failed
+CEU	2	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_CEU	0	1	eval_failed
+RMU	4	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_RMU	0	1	eval_failed
+WGA	7	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_WGA	0	1	eval_failed
+PDU	8	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_PDU	0	1	eval_failed
+SatImp	6	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_SatImp	0	1	eval_failed
+UNDIAL	5	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_UNDIAL	0	1	eval_failed
+NPO	1	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_NPO	0	1	eval_failed
+DPO	3	20260324_r3_tofu_Llama-3.2-1B-Instruct_forget10_DPO	0	1	eval_failed

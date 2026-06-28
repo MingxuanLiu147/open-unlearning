@@ -1,0 +1,61 @@
+protocolVersion: 2
+name: tofu-llama2-7b-all-unlearn
+type: job
+jobRetryCount: 0
+
+prerequisites:
+  - type: dockerimage
+    uri: "210.75.240.150:30003/liumingxuan/open-unlearning:v1"
+    name: docker_image0
+
+taskRoles:
+  taskrole:
+    instances: 1
+    completion:
+      minFailedInstances: 1
+    taskRetryCount: 0
+    dockerImage: docker_image0
+    resourcePerInstance:
+      gpu: 1
+      cpu: 6
+      memoryMB: 62500
+    commands:
+      - "export HF_HOME=/mnt/confignfs/usercache/liumingxuan/huggingface"
+      - "export TRANSFORMERS_CACHE=/mnt/confignfs/usercache/liumingxuan/huggingface"
+      - "export HF_DATASETS_CACHE=/mnt/confignfs/usercache/liumingxuan/huggingface/datasets"
+      - "export MODEL_DIR=/mnt/confignfs/userdata/liumingxuan/models/Llama-2-7b-chat-hf"
+      - "export SAVE_DIR=/mnt/confignfs/userdata/liumingxuan/saves"
+      - "cd /workspace/open-unlearning"
+      - "ln -sf /mnt/confignfs/userdata/liumingxuan/data data"
+      - "mkdir -p $SAVE_DIR/finetune $SAVE_DIR/unlearn $SAVE_DIR/eval"
+      - "ln -sf $SAVE_DIR saves"
+      - "echo ========== Step 1 Finetune on TOFU full =========="
+      - "python src/train.py --config-name=unlearn.yaml model=Llama-2-7b-chat-hf model.model_args.pretrained_model_name_or_path=$MODEL_DIR model.tokenizer_args.pretrained_model_name_or_path=$MODEL_DIR data=unlearn data/datasets@data.forget=TOFU_QA_forget data/datasets@data.retain=TOFU_QA_retain data.forget.TOFU_QA_forget.args.hf_args.name=full mode=finetune trainer=finetune trainer.args.num_train_epochs=5 trainer.args.per_device_train_batch_size=4 trainer.args.gradient_accumulation_steps=4 trainer.args.gradient_checkpointing=true trainer.args.do_eval=false task_name=tofu_Llama-2-7b-chat-hf_full paths.output_dir=$SAVE_DIR/finetune/tofu_Llama-2-7b-chat-hf_full || echo FINETUNE FAILED"
+      - "export FT_MODEL=$SAVE_DIR/finetune/tofu_Llama-2-7b-chat-hf_full"
+      - "echo ========== Step 2 Eval retain baseline =========="
+      - "python src/eval.py experiment=eval/tofu/default model=Llama-2-7b-chat-hf model.model_args.pretrained_model_name_or_path=$FT_MODEL model.tokenizer_args.pretrained_model_name_or_path=$MODEL_DIR forget_split=forget10 holdout_split=holdout10 task_name=tofu_Llama-2-7b-chat-hf_retain90 paths.output_dir=$SAVE_DIR/eval/tofu_Llama-2-7b-chat-hf_retain90 || echo EVAL_RETAIN FAILED"
+      - "export RETAIN_LOGS=$SAVE_DIR/eval/tofu_Llama-2-7b-chat-hf_retain90/TOFU_EVAL.json"
+      - "echo ========== Step 3 Unlearn all algorithms =========="
+      - "for ALGO in GradAscent GradDiff NPO RMU SimNPO WGA SatImp PDU CEU UNDIAL; do echo ===== Unlearning with $ALGO =====; python src/train.py --config-name=unlearn.yaml experiment=unlearn/tofu/default trainer=$ALGO model=Llama-2-7b-chat-hf model.model_args.pretrained_model_name_or_path=$FT_MODEL model.tokenizer_args.pretrained_model_name_or_path=$MODEL_DIR forget_split=forget10 retain_split=retain90 retain_logs_path=$RETAIN_LOGS task_name=tofu_Llama-2-7b-chat-hf_forget10_${ALGO} trainer.args.per_device_train_batch_size=4 trainer.args.gradient_accumulation_steps=4 trainer.args.gradient_checkpointing=true paths.output_dir=$SAVE_DIR/unlearn/tofu_Llama-2-7b-chat-hf_forget10_${ALGO} || echo ${ALGO} FAILED; done"
+      - "echo ===== Unlearning with DPO ====="
+      - "python src/train.py --config-name=unlearn.yaml experiment=unlearn/tofu/idk trainer=DPO model=Llama-2-7b-chat-hf model.model_args.pretrained_model_name_or_path=$FT_MODEL model.tokenizer_args.pretrained_model_name_or_path=$MODEL_DIR forget_split=forget10 retain_split=retain90 retain_logs_path=$RETAIN_LOGS task_name=tofu_Llama-2-7b-chat-hf_forget10_DPO trainer.args.per_device_train_batch_size=4 trainer.args.gradient_accumulation_steps=4 trainer.args.gradient_checkpointing=true paths.output_dir=$SAVE_DIR/unlearn/tofu_Llama-2-7b-chat-hf_forget10_DPO || echo DPO FAILED"
+      - "echo ========== Step 4 Eval all unlearned models =========="
+      - "for ALGO in GradAscent GradDiff NPO DPO RMU SimNPO WGA SatImp PDU CEU UNDIAL; do echo ===== Eval $ALGO =====; python src/eval.py experiment=eval/tofu/default model=Llama-2-7b-chat-hf model.model_args.pretrained_model_name_or_path=$SAVE_DIR/unlearn/tofu_Llama-2-7b-chat-hf_forget10_${ALGO} model.tokenizer_args.pretrained_model_name_or_path=$MODEL_DIR forget_split=forget10 holdout_split=holdout10 task_name=tofu_Llama-2-7b-chat-hf_forget10_${ALGO} retain_logs_path=$RETAIN_LOGS paths.output_dir=$SAVE_DIR/unlearn/tofu_Llama-2-7b-chat-hf_forget10_${ALGO}/evals || echo EVAL_${ALGO} FAILED; done"
+      - "echo ========== ALL DONE =========="
+
+defaults:
+  virtualCluster: default
+
+extras:
+  com.microsoft.pai.runtimeplugin:
+    - plugin: ssh
+      parameters:
+        jobssh: true
+        userssh:
+          type: custom
+          value: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC0XD7JEZGiJbJe4vSAaiCOFmAQsVz0FVfKTbifZDNZzOrGC/JavH6cT8JNinNt2JT4UFmDO1yA7pSXx6tcv21rOztIGkdOeU4xU4Q+Id3zbKq6LWDpJ/NoofoiQaHqJmQSkkZSkqSdYfj1o+Dj0S/Uht6asOzv8+BMPa8YASgYaAbf/H52rJRwUUCQwXe8KCYhFhIkoZzt/5Odz7No1vjbukwRQoPlZLZf5VLLH5JWOXI0BaYD1ubvV+hSuVl5QvoYLZvrxpWZ0JmaS/DHq5IlciwGTceGX6Utla9Q7FoXTD4/XvphzmY4QhW+oOSaQzOGjxwEdHt4zlAjBk2K+qjesw3cdFv0/XNiQsmeDPJL5wv7p4FOia3guiddgEdoxbne7Cfv9+Ap6ey3tNTFrRDSyxB/fVhfaZeISaJuflEI8HeomEuqb39Qn0oXPNbRrf0+GI9qU1ylWUIvFvnPQx7xf6BCw0CEPaYda8NSaod64SVNI+2Vc5swhQWJnTG5E9mMhJ0bViQOU48yP43vRZVts5HZyWlil/k0EayinHkyyTkhbVHYPxG4UpIzA6jQv3tdfX5c56cTuuKEZqxdXxHD+jq4SKNBTyraNrMFuK2xl18NQx2kKu6lTSIrF2+RrRi8Gu7gbaOfCDh4zsJS+x/24MU9REaB+7P8C4UKaD1Sbw== happy-yan"
+    - plugin: teamwise_storage
+      parameters:
+        storageConfigNames:
+          - usercache
+          - userdata

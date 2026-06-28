@@ -1,6 +1,5 @@
 <template>
   <div class="workshop">
-    <!-- Mode selector -->
     <div class="mode-selector">
       <el-radio-group v-model="store.mode" size="default">
         <el-radio-button
@@ -15,7 +14,8 @@
       </el-radio-group>
     </div>
 
-    <!-- Three-column card area -->
+    <PathConfig />
+
     <el-row :gutter="16" class="config-area">
       <el-col :span="8">
         <ModelCards />
@@ -25,13 +25,13 @@
       </el-col>
       <el-col :span="8">
         <DatasetCards />
+        <DataUpload v-if="store.mode !== 'eval'" :mode="store.mode" />
         <div style="margin-top: 12px;">
           <EvalSelector />
         </div>
       </el-col>
     </el-row>
 
-    <!-- Bottom: Params + Command + Run -->
     <div class="bottom-panel">
       <ParamsPanel />
       <CommandPreview />
@@ -44,6 +44,8 @@ import { useExperimentStore } from '@/stores/experiment'
 import ModelCards from '@/components/workshop/ModelCards.vue'
 import MethodCards from '@/components/workshop/MethodCards.vue'
 import DatasetCards from '@/components/workshop/DatasetCards.vue'
+import DataUpload from '@/components/workshop/DataUpload.vue'
+import PathConfig from '@/components/workshop/PathConfig.vue'
 import EvalSelector from '@/components/workshop/EvalSelector.vue'
 import ParamsPanel from '@/components/workshop/ParamsPanel.vue'
 import CommandPreview from '@/components/workshop/CommandPreview.vue'

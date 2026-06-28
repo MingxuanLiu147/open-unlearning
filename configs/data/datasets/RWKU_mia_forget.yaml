@@ -1,0 +1,10 @@
+RWKU_mia_forget:
+  handler: QADataset
+  args:
+    hf_args:
+      name: "mia_forget"
+      split: "train"
+      path: "jinzhuoran/RWKU"
+    question_key: "question"
+    answer_key: "answer"
+    max_length: 512

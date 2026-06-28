@@ -1,0 +1,7 @@
+model_family: blip2
+model_path: Salesforce/blip2-opt-2.7b
+processor_path: Salesforce/blip2-opt-2.7b
+torch_dtype: float16
+
+lora:
+  enabled: false

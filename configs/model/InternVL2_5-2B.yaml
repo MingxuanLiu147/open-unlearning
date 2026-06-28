@@ -1,0 +1,10 @@
+model_family: internvl2_5
+model_path: OpenGVLab/InternVL2_5-2B
+processor_path: OpenGVLab/InternVL2_5-2B
+torch_dtype: bfloat16
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 16
+  dropout: 0.05

@@ -1,0 +1,15 @@
+# MQuAKE-CF + NMKE 多跳编辑实验
+
+defaults:
+  - override /model: Qwen2.5-7B-Instruct
+  - override /trainer: edit/NMKE
+  - override /data: edit
+  - override /eval: edit
+
+data:
+  edit:
+    MQuAKE_cf_edit:
+      handler: MQuAKEDataset
+      args:
+        variant: "cf"
+        max_length: 512

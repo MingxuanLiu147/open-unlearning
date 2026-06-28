@@ -1,0 +1,17 @@
+# NMKE: Neuron-level Model Knowledge Editing
+# NeurIPS 2025 — neuron attribution + dynamic sparse masking for lifelong editing
+
+defaults:
+  - edit/base_editor@_here_
+  - _self_
+
+handler: NMKEEditor
+
+method_args:
+  layers: [5, 6, 7, 8]
+  attribution_steps: 20
+  sparsity_ratio: 0.01
+  v_lr: 0.1
+  v_num_grad_steps: 25
+  clamp_norm_factor: 5.0
+  attribution_batch_size: 1

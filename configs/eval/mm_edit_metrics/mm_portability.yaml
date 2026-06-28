@@ -1,0 +1,7 @@
+# 多模态知识编辑可移植性指标
+# 含 VLKEB 多跳推理评估
+
+mm_portability:
+  handler: MMEditPortabilityEvaluator
+  args:
+    metric_name: mm_portability

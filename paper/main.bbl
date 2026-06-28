@@ -1,0 +1,313 @@
+\begin{thebibliography}{38}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Cho et~al.(2025)Cho, Koh, Ryu, Lee, and
+  Lee}]{dorna2025openunlearning}
+Ikhyun Cho, Woosung Koh, Kanghyun Ryu, Jiho Lee, and Jaeho Lee. 2025.
+\newblock {OpenUnlearning}: Accelerating {LLM} unlearning via unified
+  benchmarking.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Deng et~al.(2024)Deng, Deng, Wei, Zheng, Zhang, and
+  Chen}]{wang2024unke}
+Jingcheng Deng, Shumin Deng, Fangqian Wei, Kanyin Zheng, Ningyu Zhang, and
+  Huajun Chen. 2024.
+\newblock {UnKE}: Unstructured knowledge editing in large language models.
+\newblock \emph{arXiv preprint arXiv:2405.15349}.
+
+\bibitem[{Dong et~al.(2025)Dong, Lin, Belkin, Huerta, and
+  Vuli{\'c}}]{dong2025undial}
+Yijiang~River Dong, Hongzhou Lin, Mikhail Belkin, Ramon Huerta, and Ivan
+  Vuli{\'c}. 2025.
+\newblock {UNDIAL}: Self-distillation with adjusted logits for robust
+  unlearning in large language models.
+\newblock In \emph{Proceedings of the 2025 Conference of the North American
+  Chapter of the Association for Computational Linguistics (NAACL)}.
+\newblock ArXiv:2402.10052.
+
+\bibitem[{Entesari et~al.(2025)Entesari, Hatami, Khaziev, Ramakrishna, and
+  Fazlyab}]{entesari2025pdu}
+Taha Entesari, Arman Hatami, Rinat Khaziev, Anil Ramakrishna, and Mahyar
+  Fazlyab. 2025.
+\newblock Constrained entropic unlearning: A primal-dual framework for large
+  language models.
+\newblock \emph{arXiv preprint arXiv:2506.05314}.
+
+\bibitem[{Fan et~al.(2024)Fan, Liu, Lin, Jia, Zhang, Mei, and
+  Liu}]{fan2024simnpo}
+Chongyu Fan, Jiancheng Liu, Licong Lin, Jinghan Jia, Ruiqi Zhang, Song Mei, and
+  Sijia Liu. 2024.
+\newblock Simplicity prevails: Rethinking negative preference optimization for
+  {LLM} unlearning.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Fang et~al.(2024)Fang, Jiang, Wang, Ma, Wang, He, and
+  Chua}]{fang2024alphaedit}
+Junfeng Fang, Houcheng Jiang, Kun Wang, Yunshan Ma, Xiang Wang, Xiangnan He,
+  and Tat-Seng Chua. 2024.
+\newblock {AlphaEdit}: Null-space constrained knowledge editing for language
+  models.
+\newblock \emph{arXiv preprint arXiv:2410.02355}.
+
+\bibitem[{Hartvigsen et~al.(2023)Hartvigsen, Sankaranarayanan, Palangi, Kim,
+  and Ghassemi}]{hartvigsen2023grace}
+Thomas Hartvigsen, Swami Sankaranarayanan, Hamid Palangi, Yoon Kim, and Marzyeh
+  Ghassemi. 2023.
+\newblock Aging with {GRACE}: Lifelong model editing with discrete key-value
+  adaptors.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+
+\bibitem[{Hu et~al.(2022)Hu, Shen, Wallis, Allen-Zhu, Li, Wang, Wang, and
+  Chen}]{hu2022lora}
+Edward~J. Hu, Yelong Shen, Phillip Wallis, Zeyuan Allen-Zhu, Yuanzhi Li, Shean
+  Wang, Lu~Wang, and Weizhu Chen. 2022.
+\newblock {LoRA}: Low-rank adaptation of large language models.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Huo et~al.(2025)Huo, Yan, Zheng, Lyu, Zou, Wei, and
+  Hu}]{huo2025mmunlearner}
+Jiahao Huo, Yibo Yan, Xu~Zheng, Yuanhuiyi Lyu, Xin Zou, Zhihua Wei, and Xuming
+  Hu. 2025.
+\newblock \href {https://aclanthology.org/2025.findings-acl.375/}
+  {{MMUnlearner}: Reformulating multimodal machine unlearning in the era of
+  multimodal large language models}.
+\newblock In \emph{Findings of the Association for Computational Linguistics:
+  ACL 2025}, pages 7190--7206. Association for Computational Linguistics.
+
+\bibitem[{Jia et~al.(2024)Jia, Zhang, Zhang, Liu, Runwal, Diffenderfer,
+  Kailkhura, and Liu}]{jia2024soul}
+Jinghan Jia, Yihua Zhang, Yimeng Zhang, Jiancheng Liu, Bharat Runwal, James
+  Diffenderfer, Bhavya Kailkhura, and Sijia Liu. 2024.
+\newblock {SOUL}: Unlocking the power of second-order optimization for {LLM}
+  unlearning.
+\newblock In \emph{Proceedings of the 2024 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}.
+\newblock ArXiv:2404.18239.
+
+\bibitem[{Li et~al.(2024)Li, Pan, Gopal, Yue, Berber, Gatti, Li, Dombrowski,
+  Goel, Phan, Mukobi, Helm-Burger, Lababidi, Justen, Liu, Chen, Barrass, Zhang,
+  Zhu, Tamirisa, Bharathi, Khoja, Zhao, Herbert-Voss, Breuer, Marks, Patel,
+  Zou, Mazeika, Wang, Oswal, Lin, Hunt, Tienken-Harder, Shih, Talley, Guan,
+  Kaplan, Steneker, Campbell, Jokubaitis, Levinson, Wang, Qian, Karmakar,
+  Basart, Fitz, Levine, Kumthekar, Murphy, Rajesh, Lehman, Goldblum, White, and
+  Hendrycks}]{li2024wmdp}
+Nathaniel Li, Alexander Pan, Anjali Gopal, Summer Yue, Daniel Berber, Alice
+  Gatti, Justin~D. Li, Ann-Kathrin Dombrowski, Shashwat Goel, Long Phan,
+  Gabriel Mukobi, Nathan Helm-Burger, Rassin Lababidi, Lennart Justen,
+  Andrew~B. Liu, Michael Chen, Isabelle Barrass, Oliver Zhang, Xiaoyuan Zhu,
+  and 36 others. 2024.
+\newblock The {WMDP} benchmark: Measuring and reducing malicious use with
+  unlearning.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Liang et~al.(2025)Liang, Cao, Zhao, Huang, Zhao, and
+  Liu}]{liang2025brep}
+Sirui Liang, Pengfei Cao, Jian Zhao, Cong Huang, Jun Zhao, and Kang Liu. 2025.
+\newblock Bias-restrained prefix representation finetuning for mathematical
+  reasoning.
+\newblock \emph{arXiv preprint arXiv:2511.10707}.
+
+\bibitem[{Liu et~al.(2025)Liu, Sun, Shen, Yang, and Wang}]{liu2025nmke}
+Jinzhe Liu, Junshu Sun, Shufan Shen, Chenxue Yang, and Shuhui Wang. 2025.
+\newblock Edit less, achieve more: Dynamic sparse neuron masking for lifelong
+  knowledge editing in {LLMs}.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+\newblock ArXiv:2510.22139.
+
+\bibitem[{Liu et~al.(2024)Liu, Wang, Yin, Molchanov, Wang, Cheng, and
+  Chen}]{liu2024dora}
+Shih-Yang Liu, Chien-Yi Wang, Hongxu Yin, Pavlo Molchanov, Yu-Chiang~Frank
+  Wang, Kwang-Ting Cheng, and Min-Hung Chen. 2024.
+\newblock {DoRA}: Weight-decomposed low-rank adaptation.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Maini et~al.(2024)Maini, Feng, Schwarzschild, Lipton, and
+  Kolter}]{maini2024tofu}
+Pratyush Maini, Zhili Feng, Avi Schwarzschild, Zachary~C. Lipton, and J.~Zico
+  Kolter. 2024.
+\newblock {TOFU}: A task of fictitious unlearning for {LLMs}.
+\newblock In \emph{International Conference on Machine Learning (ICML)}.
+
+\bibitem[{Meng et~al.(2022)Meng, Bau, Andonian, and Belinkov}]{meng2022rome}
+Kevin Meng, David Bau, Alex Andonian, and Yonatan Belinkov. 2022.
+\newblock Locating and editing factual associations in {GPT}.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+
+\bibitem[{Meng et~al.(2023)Meng, Sharma, Andonian, Belinkov, and
+  Bau}]{meng2023memit}
+Kevin Meng, Arnab~Sen Sharma, Alex Andonian, Yonatan Belinkov, and David Bau.
+  2023.
+\newblock Mass-editing memory in a transformer.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Mitchell et~al.(2022{\natexlab{a}})Mitchell, Lin, Bosselut, Finn, and
+  Manning}]{mitchell2022mend}
+Eric Mitchell, Charles Lin, Antoine Bosselut, Chelsea Finn, and Christopher~D.
+  Manning. 2022{\natexlab{a}}.
+\newblock Fast model editing at scale.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Mitchell et~al.(2022{\natexlab{b}})Mitchell, Lin, Bosselut, Manning,
+  and Finn}]{mitchell2022serac}
+Eric Mitchell, Charles Lin, Antoine Bosselut, Christopher~D. Manning, and
+  Chelsea Finn. 2022{\natexlab{b}}.
+\newblock Memory-based model editing at scale.
+\newblock In \emph{International Conference on Machine Learning (ICML)}.
+
+\bibitem[{Pan et~al.(2024)Pan, Fan, Li, Yu, Fei, Tang, Hong, Zhang, and
+  Sun}]{pan2024unike}
+Kaihang Pan, Zhaoyu Fan, Juncheng Li, Qifan Yu, Hao Fei, Siliang Tang, Richang
+  Hong, Hanwang Zhang, and Qianru Sun. 2024.
+\newblock Towards unified multimodal editing with enhanced knowledge
+  collaboration.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+\newblock Spotlight. arXiv:2409.19872.
+
+\bibitem[{Pang et~al.(2026)Pang, Zheng, Deng, Li, Zhong, and Wei}]{pang2026sga}
+Zirui Pang, Hao Zheng, Zhijie Deng, Ling Li, Zixin Zhong, and Jiaheng Wei.
+  2026.
+\newblock Label smoothing improves gradient ascent in {LLM} unlearning.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+\newblock ArXiv:2510.22376.
+
+\bibitem[{Rafailov et~al.(2023)Rafailov, Sharma, Mitchell, Ermon, Manning, and
+  Finn}]{rafailov2023dpo}
+Rafael Rafailov, Archit Sharma, Eric Mitchell, Stefano Ermon, Christopher~D.
+  Manning, and Chelsea Finn. 2023.
+\newblock Direct preference optimization: Your language model is secretly a
+  reward model.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+
+\bibitem[{Shi et~al.(2024)Shi, Lee, Huang, Malladi, Zhao, Holtzman, Liu,
+  Zettlemoyer, Smith, and Zhang}]{shi2024muse}
+Weijia Shi, Jaechan Lee, Yangsibo Huang, Sadhika Malladi, Jieyu Zhao, Ari
+  Holtzman, Daogao Liu, Luke Zettlemoyer, Noah~A. Smith, and Chiyuan Zhang.
+  2024.
+\newblock {MUSE}: Machine unlearning six-way evaluation for language models.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Tan et~al.(2024)Tan, Duan, Liu, and Wang}]{tan2024malmen}
+Zhijie Tan, Hanyu Duan, Jiancheng Liu, and Weizhi Wang. 2024.
+\newblock {MALMEN}: Fast model editing at scale.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+\newblock ArXiv:2304.00740.
+
+\bibitem[{Tian et~al.(2024)Tian, Cheng, Liang, Zhang, Hu, Xue, Gou, Chen, and
+  Chen}]{tian2024instructedit}
+Bozhong Tian, Siyuan Cheng, Xiaozhuan Liang, Ningyu Zhang, Yi~Hu, Kouying Xue,
+  Yanjie Gou, Xi~Chen, and Huajun Chen. 2024.
+\newblock {InstructEdit}: Instruction-based knowledge editing for large
+  language models.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Wang et~al.(2024{\natexlab{a}})Wang, Li, Zhang, Xu, Yao, Jiang, Xie,
+  Huang, and Chen}]{wang2024wise}
+Peng Wang, Zexi Li, Ningyu Zhang, Ziwen Xu, Yunzhi Yao, Yong Jiang, Pengjun
+  Xie, Fei Huang, and Huajun Chen. 2024{\natexlab{a}}.
+\newblock {WISE}: Rethinking the knowledge memory for lifelong model editing of
+  large language models.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+
+\bibitem[{Wang et~al.(2024{\natexlab{b}})Wang, Zhang, Xie, Yao, Tian, Wang, Xi,
+  Cheng, Liu, Zheng, and Chen}]{wang2024easyedit}
+Peng Wang, Ningyu Zhang, Xin Xie, Yunzhi Yao, Bozhong Tian, Mengru Wang, Zekun
+  Xi, Siyuan Cheng, Kangwei Liu, Guozhou Zheng, and Huajun Chen.
+  2024{\natexlab{b}}.
+\newblock {EasyEdit}: An easy-to-use knowledge editing framework for large
+  language models.
+\newblock In \emph{Proceedings of the 62nd Annual Meeting of the Association
+  for Computational Linguistics (ACL)}.
+
+\bibitem[{Wang et~al.(2025{\natexlab{a}})Wang, Zhou, Zhou, Shin, Han, and
+  Weinberger}]{geffect2025wga}
+Qizhou Wang, Jin~Peng Zhou, Zhanke Zhou, Saebyeol Shin, Bo~Han, and Kilian~Q.
+  Weinberger. 2025{\natexlab{a}}.
+\newblock Rethinking {LLM} unlearning objectives: A gradient perspective and go
+  beyond.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+\newblock G-effect / WGA. arXiv:2502.19301.
+
+\bibitem[{Wang et~al.(2025{\natexlab{b}})Wang, Wei, Liu, Pang, Liu, Shah, Bao,
+  Liu, and Wei}]{zhang2025flat}
+Yaxuan Wang, Jiaheng Wei, Chris~Yuhao Liu, Jinlong Pang, Quan Liu, Ankit~Parag
+  Shah, Yujia Bao, Yang Liu, and Wei Wei. 2025{\natexlab{b}}.
+\newblock {LLM} unlearning via loss adjustment with only forget data.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+\newblock FLAT. arXiv:2410.11143.
+
+\bibitem[{Wang et~al.(2024{\natexlab{c}})Wang, Niu, Ji, He, Gao, and
+  Hua}]{wang2024mmvkd}
+Yuhang Wang, Zhenxing Niu, Haoxuan Ji, Guangyu He, Haichang Gao, and Gang Hua.
+  2024{\natexlab{c}}.
+\newblock Robust {MLLM} unlearning via visual knowledge distillation.
+\newblock \emph{arXiv preprint arXiv:2512.11325}.
+
+\bibitem[{Wu et~al.(2024)Wu, Arora, Wang, Geiger, Jurafsky, Manning, and
+  Potts}]{wu2024loreft}
+Zhengxuan Wu, Aryaman Arora, Zheng Wang, Atticus Geiger, Dan Jurafsky,
+  Christopher~D. Manning, and Christopher Potts. 2024.
+\newblock {LoReFT}: Low-rank linear subspace {ReFT}.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Yang(2025)}]{yang2025ceu}
+Bo~Yang. 2025.
+\newblock {CE-U}: Cross entropy unlearning.
+\newblock \emph{arXiv preprint arXiv:2503.01224}.
+
+\bibitem[{Yang et~al.(2025)Yang, Huang, Lou, Cao, and Liu}]{yang2025satimp}
+Puning Yang, Jianhao Huang, Jian Lou, Yinzhi Cao, and Jian Liu. 2025.
+\newblock Exploring criteria of loss reweighting to enhance {LLM} unlearning.
+\newblock In \emph{International Conference on Machine Learning (ICML)}.
+\newblock SatImp. arXiv:2505.11953.
+
+\bibitem[{Yao et~al.(2023)Yao, Xu, and Liu}]{yao2023unlearning}
+Yuanshun Yao, Xiaojun Xu, and Yang Liu. 2023.
+\newblock Large language model unlearning.
+\newblock In \emph{NeurIPS 2023 Workshop on Socially Responsible Language
+  Modelling Research (SoLaR)}.
+
+\bibitem[{Zhang et~al.(2023)Zhang, Chen, Bukharin, Karampatziakis, He, Cheng,
+  Chen, and Zhao}]{zhang2023adalora}
+Qingru Zhang, Minshuo Chen, Alexander Bukharin, Nikos Karampatziakis, Pengcheng
+  He, Yu~Cheng, Weizhu Chen, and Tuo Zhao. 2023.
+\newblock {AdaLoRA}: Adaptive budget allocation for parameter-efficient
+  fine-tuning.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Zhang et~al.(2024)Zhang, Lin, Bai, and Mei}]{zhang2024npo}
+Ruiqi Zhang, Licong Lin, Yu~Bai, and Song Mei. 2024.
+\newblock Negative preference optimization: From catastrophic collapse to
+  effective unlearning.
+\newblock \emph{arXiv preprint}.
+
+\bibitem[{Zheng et~al.(2023)Zheng, Li, Dong, Fan, Wu, Xu, and
+  Chang}]{zheng2023ike}
+Ce~Zheng, Lei Li, Qingxiu Dong, Yuxuan Fan, Zhiyong Wu, Jingjing Xu, and Baobao
+  Chang. 2023.
+\newblock Can we edit factual knowledge by in-context learning?
+\newblock In \emph{Proceedings of the 2023 Conference on Empirical Methods in
+  Natural Language Processing (EMNLP)}.
+
+\bibitem[{Zheng et~al.(2024)Zheng, Zhang, Zhang, Ye, Luo, Feng, and
+  Ma}]{zheng2024llamafactory}
+Yaowei Zheng, Richong Zhang, Junhao Zhang, Yanhan Ye, Zheyan Luo, Zhangchi
+  Feng, and Yongqiang Ma. 2024.
+\newblock {LlamaFactory}: Unified efficient fine-tuning of 100+ language
+  models.
+\newblock \emph{arXiv preprint}.
+
+\end{thebibliography}

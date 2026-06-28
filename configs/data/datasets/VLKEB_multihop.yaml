@@ -1,0 +1,9 @@
+# VLKEB 多跳推理评估子集
+
+VLKEB_multihop:
+  handler: VLKEBDataset
+  args:
+    subset: "eval_multihop"
+    image_dir: "data/edit/vlkeb/VLKEB_images"
+    rephrase_image_dir: "data/edit/vlkeb/VLKEB_images"
+    max_length: 512

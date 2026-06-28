@@ -1,0 +1,9 @@
+# FIUBench multimodal evaluation config
+benchmark: fiubench
+data_dir: data/FIUBench
+output_dir: saves/mm_eval/fiubench
+splits:
+  - forget
+  - retain
+max_new_tokens: 50
+max_records: null

@@ -1,0 +1,7 @@
+model_args:
+  pretrained_model_name_or_path: "openai-community/gpt2-medium"
+  torch_dtype: float32
+tokenizer_args:
+  pretrained_model_name_or_path: "openai-community/gpt2-medium"
+template_args:
+  apply_chat_template: false

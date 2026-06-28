@@ -1,0 +1,8 @@
+# MQuAKE-T: Multi-hop Question Answering for Knowledge Editing (Temporal variant)
+# EMNLP 2023 — temporal multi-hop reasoning benchmark (2-4 hops)
+
+MQuAKE_t_edit:
+  handler: MQuAKEDataset
+  args:
+    variant: "t"
+    max_length: 512

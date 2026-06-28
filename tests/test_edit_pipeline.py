@@ -9,6 +9,7 @@ from data.editing import (
     AKEWDataset,
     ConceptEditDataset,
     CounterFactDataset,
+    EditEveryDataset,
     EditingDataset,
     EditingSample,
     ELKENDataset,
@@ -23,6 +24,17 @@ from trainer.edit.pipeline import (
     build_edit_requests,
     execute_edit_requests,
     save_edit_artifacts,
+)
+from trainer.edit import (
+    AlphaEditEditor,
+    UNKEEditor,
+    GRACEEditor,
+    WISEEditor,
+    IKEEditor,
+    SERACEditor,
+    MALMENEditor,
+    InstructEditEditor,
+    AnyEditEditor,
 )
 
 
@@ -312,3 +324,32 @@ def test_rome_and_memit_fallback_to_available_layers(tmp_path: Path):
     assert rome_result["edited_count"] == 1
     assert memit_result["success"] is True
     assert memit_result["edited_count"] == 1
+
+
+def test_editevery_dataset_loads_and_produces_requests():
+    ds = EditEveryDataset()
+    assert len(ds) > 0
+    requests = ds.to_edit_requests(limit=2)
+    assert len(requests) == 2
+    for r in requests:
+        assert r.prompt
+        assert r.target_new
+
+
+def test_new_editor_classes_importable():
+    """Smoke-test that all 9 new editor classes are importable and registered."""
+    from trainer import TRAINER_REGISTRY
+
+    expected = [
+        "AlphaEditEditor",
+        "UNKEEditor",
+        "GRACEEditor",
+        "WISEEditor",
+        "IKEEditor",
+        "SERACEditor",
+        "MALMENEditor",
+        "InstructEditEditor",
+        "AnyEditEditor",
+    ]
+    for name in expected:
+        assert name in TRAINER_REGISTRY, f"{name} not found in TRAINER_REGISTRY"

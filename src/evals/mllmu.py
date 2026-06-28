@@ -1,14 +1,13 @@
-"""MLLMU-Bench benchmark evaluator（sidecar，不修改现有 evals 体系）。
+"""MLLMU-Bench evaluator for the multimodal sidecar pipeline."""
 
-支持 classification / generation 两种评估任务，
-在 forget / retain / test 三路数据上评估遗忘效果。
-"""
-
+import glob
 import json
 import logging
 import os
+import random
 import re
 from io import BytesIO
+from typing import Any
 
 import pandas as pd
 import torch
@@ -16,160 +15,677 @@ from PIL import Image
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
+random.seed(42)
 
 
-def _formulate_prompt_with_options(question, options):
-    options_str = "\n".join([f"{k}: {v}" for k, v in options.items()])
-    return f"{question}\n{options_str}"
+def _load_parquet_frame(path_or_dir: str) -> pd.DataFrame:
+    if os.path.isfile(path_or_dir):
+        return pd.read_parquet(path_or_dir)
+
+    parquet_files = sorted(glob.glob(os.path.join(path_or_dir, "*.parquet")))
+    if not parquet_files:
+        raise FileNotFoundError(f"No parquet files found under {path_or_dir}")
+    return pd.concat(
+        [pd.read_parquet(parquet_file) for parquet_file in parquet_files],
+        ignore_index=True,
+    )
 
 
-def evaluate_classification(parquet_path, processor, model, max_new_tokens=50):
-    """在分类任务上评估模型准确率。
-
-    Returns:
-        dict: {"image_textual_acc": float, "pure_text_acc": float, "total_acc": float}
-    """
-    df = pd.read_parquet(parquet_path)
-    tokenizer = processor.tokenizer
-
-    total_correct = 0
-    total_questions = 0
-
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Classification"):
-        tasks = row.get("Classification_Task", {})
-        image_bytes = row["image"].get("bytes")
-        try:
-            image = Image.open(BytesIO(image_bytes)).convert("RGB")
-        except Exception:
-            continue
-
-        for q_data in tasks.get("Image_Textual_Questions", []):
-            question = q_data["Question"]
-            options = q_data["Options"]
-            correct = q_data["Correct_Answer"]
-            prompt_text = _formulate_prompt_with_options(question, options)
-
-            messages = [
-                {"role": "user", "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": f"{prompt_text}\nJust give ONE letter representing the answer directly."},
-                ]},
-            ]
-            text = processor.apply_chat_template(messages, add_generation_prompt=True)
-            inputs = processor(images=[image], text=text, return_tensors="pt")
-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
-
-            with torch.no_grad():
-                outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
-            out_tokens = outputs[:, inputs["input_ids"].shape[-1]:]
-            answer_text = tokenizer.decode(out_tokens[0], skip_special_tokens=True)
-            cleaned = re.sub(r"[^a-zA-Z0-9]", "", answer_text)
-            predicted = cleaned[0].upper() if cleaned and cleaned[0].upper() in options else None
-
-            if predicted == correct:
-                total_correct += 1
-            total_questions += 1
-
-    acc = total_correct / total_questions if total_questions > 0 else 0.0
-    return {"accuracy": acc, "correct": total_correct, "total": total_questions}
+def _decode_image(image_value: Any):
+    if image_value is None:
+        return None
+    try:
+        if isinstance(image_value, dict):
+            image_bytes = image_value.get("bytes")
+            if image_bytes is not None:
+                return Image.open(BytesIO(image_bytes)).convert("RGB")
+            image_path = image_value.get("path")
+            if image_path and os.path.exists(image_path):
+                return Image.open(image_path).convert("RGB")
+        if isinstance(image_value, str) and os.path.exists(image_value):
+            return Image.open(image_value).convert("RGB")
+    except Exception as exc:
+        logger.warning("Skipping image decode failure: %s", exc)
+    return None
 
 
-def evaluate_generation(parquet_path, processor, model, max_new_tokens=200):
-    """在生成任务上评估模型输出质量（ROUGE-L）。
+def _to_list(value: Any) -> list[Any]:
+    if value is None:
+        return []
+    if isinstance(value, list):
+        return value
+    try:
+        return list(value)
+    except TypeError:
+        return [value]
 
-    Returns:
-        dict: {"rouge_l": float, "total": int}
-    """
+
+def _select_record_image(record: dict[str, Any]):
+    if record.get("image") is not None:
+        return _decode_image(record.get("image"))
+
+    candidates = [_decode_image(item) for item in _to_list(record.get("images"))]
+    candidates = [candidate for candidate in candidates if candidate is not None]
+    if not candidates:
+        return None
+    return random.choice(candidates)
+
+
+def _prepare_inputs_from_content(processor, model, content: list[dict[str, str]], images: list[Any] | None):
+    messages = [{"role": "user", "content": content}]
+    prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
+    inputs = processor(text=prompt, images=images or None, return_tensors="pt")
+    return {key: value.to(model.device) for key, value in inputs.items()}
+
+
+def _generate_from_content(
+    processor,
+    model,
+    content: list[dict[str, str]],
+    *,
+    images: list[Any] | None = None,
+    max_new_tokens: int = 50,
+) -> str:
+    inputs = _prepare_inputs_from_content(processor, model, content, images)
+    with torch.no_grad():
+        outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+    output_tokens = outputs[:, inputs["input_ids"].shape[-1] :]
+    return processor.tokenizer.decode(output_tokens[0], skip_special_tokens=True).strip()
+
+
+def _generate_text(processor, model, question: str, image=None, *, max_new_tokens: int = 50) -> str:
+    content = [{"type": "text", "text": question}]
+    images = None
+    if image is not None:
+        content.insert(0, {"type": "image"})
+        images = [image]
+    return _generate_from_content(
+        processor,
+        model,
+        content,
+        images=images,
+        max_new_tokens=max_new_tokens,
+    )
+
+
+def _formulate_prompt_with_options(question: str, options: dict[str, str]) -> str:
+    options_text = "\n".join([f"{key}: {value}" for key, value in options.items()])
+    return f"{question}\n{options_text}\nJust give ONE letter representing the answer directly."
+
+
+def _normalize_blank_prompt(question: str) -> str:
+    return (
+        question.replace("__", "[Blank]")
+        + "\nPlease ONLY provide the correct answer that should replace the [Blank]."
+    )
+
+
+def _safe_rouge_scorer():
     try:
         from rouge_score import rouge_scorer
+
+        return rouge_scorer.RougeScorer(["rouge1", "rouge2", "rougeL"], use_stemmer=True)
     except ImportError:
-        logger.warning("rouge_score not installed, skipping generation eval")
-        return {"rouge_l": 0.0, "total": 0}
+        logger.warning("rouge_score is not installed; MLLMU generation ROUGE metrics will be zero.")
+        return None
 
-    scorer = rouge_scorer.RougeScorer(["rougeL"], use_stemmer=True)
-    df = pd.read_parquet(parquet_path)
-    tokenizer = processor.tokenizer
 
-    total_rouge = 0.0
-    total_count = 0
+def _compute_bleu(reference: str, prediction: str) -> float:
+    try:
+        from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 
-    for _, row in tqdm(df.iterrows(), total=len(df), desc="Generation"):
-        image_bytes = row["image"].get("bytes")
-        try:
-            image = Image.open(BytesIO(image_bytes)).convert("RGB")
-        except Exception:
-            continue
+        return sentence_bleu(
+            [reference.split()],
+            prediction.split(),
+            smoothing_function=SmoothingFunction().method1,
+        )
+    except ImportError:
+        logger.warning("nltk is not installed; MLLMU BLEU metrics will be zero.")
+        return 0.0
 
-        metadata = json.loads(row["metadata"])
-        for qa in metadata:
-            question = qa.get("Question", "")
-            answer = qa.get("Answer", "")
-            if not question or not answer:
+
+def _new_counter() -> dict[str, float]:
+    return {"correct": 0, "total": 0}
+
+
+def _new_generation_counter() -> dict[str, float]:
+    return {"rouge1": 0.0, "rouge2": 0.0, "rougeL": 0.0, "bleu": 0.0, "total": 0}
+
+
+def _finalize_counter(counter: dict[str, float]) -> dict[str, float]:
+    total = int(counter["total"])
+    correct = int(counter["correct"])
+    return {
+        "accuracy": (correct / total) if total else 0.0,
+        "correct": correct,
+        "total": total,
+    }
+
+
+def _finalize_generation_counter(counter: dict[str, float]) -> dict[str, float]:
+    total = int(counter["total"])
+    if total == 0:
+        return {"rouge1": 0.0, "rouge2": 0.0, "rougeL": 0.0, "bleu": 0.0, "total": 0}
+    return {
+        "rouge1": counter["rouge1"] / total,
+        "rouge2": counter["rouge2"] / total,
+        "rougeL": counter["rougeL"] / total,
+        "bleu": counter["bleu"] / total,
+        "total": total,
+    }
+
+
+def _maybe_filter_frame(df: pd.DataFrame, filter_ids: set[str] | None) -> pd.DataFrame:
+    if not filter_ids or "ID" not in df.columns:
+        return df
+    return df[df["ID"].astype(str).isin(filter_ids)].reset_index(drop=True)
+
+
+def _maybe_limit_frame(df: pd.DataFrame, max_records: int | None) -> pd.DataFrame:
+    if max_records is None or max_records <= 0 or len(df) <= max_records:
+        return df
+    return df.head(max_records).reset_index(drop=True)
+
+
+def _parse_shot_num(shot_num: str) -> int:
+    normalized = str(shot_num).strip().lower()
+    if normalized in {"zero", "zero_shot", "0"}:
+        return 0
+    if normalized in {"one", "one_shot"}:
+        return 1
+    digits = re.findall(r"\d+", normalized)
+    if digits:
+        return int(digits[0])
+    raise ValueError(f"Unsupported shot_num={shot_num}")
+
+
+def _sample_few_shot_ids(df: pd.DataFrame, shot_count: int) -> list[str]:
+    if shot_count <= 0 or "ID" not in df.columns:
+        return []
+    ids = df["ID"].astype(str).unique().tolist()
+    if not ids:
+        return []
+    rng = random.Random(42)
+    return rng.sample(ids, min(shot_count, len(ids)))
+
+
+def _build_text_only_prompt(prompt: str, exemplars: list[dict[str, str]]) -> str:
+    blocks = []
+    for idx, exemplar in enumerate(exemplars):
+        blocks.append(
+            f"Example {idx + 1}\n{exemplar['prompt']}\nCorrect Answer: {exemplar['answer']}"
+        )
+    blocks.append(prompt)
+    return "\n\n".join(blocks)
+
+
+def _build_image_content(prompt: str, image, exemplars: list[dict[str, Any]]):
+    content: list[dict[str, str]] = []
+    images: list[Any] = []
+
+    for idx, exemplar in enumerate(exemplars):
+        exemplar_image = exemplar.get("image")
+        if exemplar_image is not None:
+            content.append({"type": "image"})
+            images.append(exemplar_image)
+        content.append(
+            {
+                "type": "text",
+                "text": (
+                    f"Example {idx + 1}\n{exemplar['prompt']}\n"
+                    f"Correct Answer: {exemplar['answer']}"
+                ),
+            }
+        )
+
+    if image is not None:
+        content.append({"type": "image"})
+        images.append(image)
+    content.append({"type": "text", "text": prompt})
+
+    return content, images or None
+
+
+def _build_classification_few_shots(df: pd.DataFrame, selected_ids: list[str]):
+    exemplars = {"image_textual": [], "pure_text": []}
+    skip_map: dict[str, dict[str, set[int]]] = {}
+    if not selected_ids:
+        return exemplars, skip_map
+
+    filtered = df[df["ID"].astype(str).isin(selected_ids)]
+    for _, row in filtered.iterrows():
+        record = row.to_dict()
+        row_id = str(record.get("ID") or "")
+        image = _select_record_image(record)
+        tasks = record.get("Classification_Task") or {}
+        skip_map.setdefault(row_id, {"image_textual": set(), "pure_text": set()})
+
+        for idx, question_data in enumerate(_to_list(tasks.get("Image_Textual_Questions"))):
+            question = str(question_data.get("Question") or "").strip()
+            options = dict(question_data.get("Options") or {})
+            correct = str(question_data.get("Correct_Answer") or "").strip().upper()
+            if not question or not options or not correct:
+                continue
+            exemplars["image_textual"].append(
+                {
+                    "image": image,
+                    "prompt": _formulate_prompt_with_options(question, options),
+                    "answer": correct,
+                }
+            )
+            skip_map[row_id]["image_textual"].add(idx)
+
+        for idx, question_data in enumerate(_to_list(tasks.get("Pure_Text_Questions"))):
+            question = str(question_data.get("Question") or "").strip()
+            options = dict(question_data.get("Options") or {})
+            correct = str(question_data.get("Correct_Answer") or "").strip().upper()
+            if not question or not options or not correct:
+                continue
+            exemplars["pure_text"].append(
+                {
+                    "prompt": _formulate_prompt_with_options(question, options),
+                    "answer": correct,
+                }
+            )
+            skip_map[row_id]["pure_text"].add(idx)
+
+    return exemplars, skip_map
+
+
+def _build_fill_blank_few_shots(df: pd.DataFrame, selected_ids: list[str]):
+    exemplars = {"image_textual": [], "pure_text": []}
+    skip_map: dict[str, dict[str, set[int]]] = {}
+    if not selected_ids:
+        return exemplars, skip_map
+
+    filtered = df[df["ID"].astype(str).isin(selected_ids)]
+    for _, row in filtered.iterrows():
+        record = row.to_dict()
+        row_id = str(record.get("ID") or "")
+        image = _select_record_image(record)
+        skip_map.setdefault(row_id, {"image_textual": set(), "pure_text": set()})
+
+        for idx, question_data in enumerate(_to_list(record.get("Mask_Task"))):
+            question = str(question_data.get("Question") or "").strip()
+            answer = str(question_data.get("Ground_Truth") or "").strip()
+            qa_type = str(question_data.get("Type") or "").strip()
+            if not question or not answer or qa_type not in {"Image_Textual", "Pure_Text"}:
                 continue
 
-            messages = [
-                {"role": "user", "content": [
-                    {"type": "image"},
-                    {"type": "text", "text": question},
-                ]},
-            ]
-            text = processor.apply_chat_template(messages, add_generation_prompt=True)
-            inputs = processor(images=[image], text=text, return_tensors="pt")
-            inputs = {k: v.to(model.device) for k, v in inputs.items()}
+            label = "image_textual" if qa_type == "Image_Textual" else "pure_text"
+            exemplars[label].append(
+                {
+                    "image": image if label == "image_textual" else None,
+                    "prompt": _normalize_blank_prompt(question),
+                    "answer": answer,
+                }
+            )
+            skip_map[row_id][label].add(idx)
 
-            with torch.no_grad():
-                outputs = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
-            out_tokens = outputs[:, inputs["input_ids"].shape[-1]:]
-            generated = tokenizer.decode(out_tokens[0], skip_special_tokens=True)
+    return exemplars, skip_map
 
-            score = scorer.score(answer, generated)
-            total_rouge += score["rougeL"].fmeasure
-            total_count += 1
 
-    avg_rouge = total_rouge / total_count if total_count > 0 else 0.0
-    return {"rouge_l": avg_rouge, "total": total_count}
+def evaluate_classification(
+    parquet_path: str,
+    processor,
+    model,
+    *,
+    max_new_tokens: int = 50,
+    filter_ids: set[str] | None = None,
+    few_shot_df: pd.DataFrame | None = None,
+    shot_count: int = 0,
+    max_records: int | None = None,
+):
+    df = _maybe_limit_frame(_maybe_filter_frame(_load_parquet_frame(parquet_path), filter_ids), max_records)
+    selected_ids = _sample_few_shot_ids(df, shot_count)
+    few_shot_examples, skip_map = (
+        _build_classification_few_shots(few_shot_df, selected_ids)
+        if shot_count > 0 and few_shot_df is not None
+        else ({"image_textual": [], "pure_text": []}, {})
+    )
+
+    counters = {
+        "image_textual": _new_counter(),
+        "pure_text": _new_counter(),
+    }
+
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Classification"):
+        record = row.to_dict()
+        row_id = str(record.get("ID") or "")
+        image = _select_record_image(record)
+        tasks = record.get("Classification_Task") or {}
+
+        for idx, question_data in enumerate(_to_list(tasks.get("Image_Textual_Questions"))):
+            if idx in skip_map.get(row_id, {}).get("image_textual", set()):
+                continue
+            question = str(question_data.get("Question") or "").strip()
+            options = dict(question_data.get("Options") or {})
+            correct = str(question_data.get("Correct_Answer") or "").strip().upper()
+            if not question or not options or not correct:
+                continue
+
+            prompt = _formulate_prompt_with_options(question, options)
+            content, images = _build_image_content(prompt, image, few_shot_examples["image_textual"])
+            generated = _generate_from_content(
+                processor,
+                model,
+                content,
+                images=images,
+                max_new_tokens=max_new_tokens,
+            )
+            cleaned = re.sub(r"[^a-zA-Z0-9]", "", generated)
+            predicted = cleaned[0].upper() if cleaned else None
+            if predicted == correct:
+                counters["image_textual"]["correct"] += 1
+            counters["image_textual"]["total"] += 1
+
+        for idx, question_data in enumerate(_to_list(tasks.get("Pure_Text_Questions"))):
+            if idx in skip_map.get(row_id, {}).get("pure_text", set()):
+                continue
+            question = str(question_data.get("Question") or "").strip()
+            options = dict(question_data.get("Options") or {})
+            correct = str(question_data.get("Correct_Answer") or "").strip().upper()
+            if not question or not options or not correct:
+                continue
+
+            prompt = _build_text_only_prompt(
+                _formulate_prompt_with_options(question, options),
+                few_shot_examples["pure_text"],
+            )
+            generated = _generate_text(
+                processor,
+                model,
+                prompt,
+                image=None,
+                max_new_tokens=max_new_tokens,
+            )
+            cleaned = re.sub(r"[^a-zA-Z0-9]", "", generated)
+            predicted = cleaned[0].upper() if cleaned else None
+            if predicted == correct:
+                counters["pure_text"]["correct"] += 1
+            counters["pure_text"]["total"] += 1
+
+    total_counter = {
+        "correct": counters["image_textual"]["correct"] + counters["pure_text"]["correct"],
+        "total": counters["image_textual"]["total"] + counters["pure_text"]["total"],
+    }
+    return {
+        "image_textual": _finalize_counter(counters["image_textual"]),
+        "pure_text": _finalize_counter(counters["pure_text"]),
+        "total": _finalize_counter(total_counter),
+    }
+
+
+def evaluate_fill_in_the_blank(
+    parquet_path: str,
+    processor,
+    model,
+    *,
+    max_new_tokens: int = 50,
+    filter_ids: set[str] | None = None,
+    few_shot_df: pd.DataFrame | None = None,
+    shot_count: int = 0,
+    max_records: int | None = None,
+):
+    df = _maybe_limit_frame(_maybe_filter_frame(_load_parquet_frame(parquet_path), filter_ids), max_records)
+    selected_ids = _sample_few_shot_ids(df, shot_count)
+    few_shot_examples, skip_map = (
+        _build_fill_blank_few_shots(few_shot_df, selected_ids)
+        if shot_count > 0 and few_shot_df is not None
+        else ({"image_textual": [], "pure_text": []}, {})
+    )
+
+    counters = {
+        "image_textual": _new_counter(),
+        "pure_text": _new_counter(),
+    }
+
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="FillBlank"):
+        record = row.to_dict()
+        row_id = str(record.get("ID") or "")
+        image = _select_record_image(record)
+
+        for idx, question_data in enumerate(_to_list(record.get("Mask_Task"))):
+            question = str(question_data.get("Question") or "").strip()
+            answer = str(question_data.get("Ground_Truth") or "").strip()
+            qa_type = str(question_data.get("Type") or "").strip()
+            if not question or not answer or qa_type not in {"Image_Textual", "Pure_Text"}:
+                continue
+
+            label = "image_textual" if qa_type == "Image_Textual" else "pure_text"
+            if idx in skip_map.get(row_id, {}).get(label, set()):
+                continue
+
+            prompt = _normalize_blank_prompt(question)
+            if label == "image_textual":
+                content, images = _build_image_content(prompt, image, few_shot_examples[label])
+                generated = _generate_from_content(
+                    processor,
+                    model,
+                    content,
+                    images=images,
+                    max_new_tokens=max_new_tokens,
+                )
+            else:
+                generated = _generate_text(
+                    processor,
+                    model,
+                    _build_text_only_prompt(prompt, few_shot_examples[label]),
+                    image=None,
+                    max_new_tokens=max_new_tokens,
+                )
+
+            if answer.lower() in generated.lower():
+                counters[label]["correct"] += 1
+            counters[label]["total"] += 1
+
+    total_counter = {
+        "correct": counters["image_textual"]["correct"] + counters["pure_text"]["correct"],
+        "total": counters["image_textual"]["total"] + counters["pure_text"]["total"],
+    }
+    return {
+        "image_textual": _finalize_counter(counters["image_textual"]),
+        "pure_text": _finalize_counter(counters["pure_text"]),
+        "total": _finalize_counter(total_counter),
+    }
+
+
+def evaluate_generation(
+    parquet_path: str,
+    processor,
+    model,
+    *,
+    output_dir: str,
+    split_name: str,
+    max_new_tokens: int = 200,
+    filter_ids: set[str] | None = None,
+    max_records: int | None = None,
+):
+    df = _maybe_limit_frame(_maybe_filter_frame(_load_parquet_frame(parquet_path), filter_ids), max_records)
+    scorer = _safe_rouge_scorer()
+    counters = {
+        "image_textual": _new_generation_counter(),
+        "pure_text": _new_generation_counter(),
+    }
+    records = []
+
+    for _, row in tqdm(df.iterrows(), total=len(df), desc="Generation"):
+        record = row.to_dict()
+        image = _select_record_image(record)
+
+        for qa in _to_list(record.get("Generation_Task")):
+            question = str(qa.get("Question") or "").strip()
+            answer = str(qa.get("Ground_Truth") or "").strip()
+            qa_type = str(qa.get("Type") or "").strip()
+            if not question or not answer or qa_type not in {"Image_Textual", "Pure_Text"}:
+                continue
+
+            label = "image_textual" if qa_type == "Image_Textual" else "pure_text"
+            generated = _generate_text(
+                processor,
+                model,
+                question,
+                image=image if label == "image_textual" else None,
+                max_new_tokens=max_new_tokens,
+            )
+
+            if scorer is not None:
+                rouge_scores = scorer.score(answer, generated)
+                counters[label]["rouge1"] += rouge_scores["rouge1"].fmeasure
+                counters[label]["rouge2"] += rouge_scores["rouge2"].fmeasure
+                counters[label]["rougeL"] += rouge_scores["rougeL"].fmeasure
+            counters[label]["bleu"] += _compute_bleu(answer, generated)
+            counters[label]["total"] += 1
+
+            records.append(
+                {
+                    "id": str(record.get("ID") or ""),
+                    "type": qa_type,
+                    "question": question,
+                    "generated_answer": generated,
+                    "ground_truth": answer,
+                }
+            )
+
+    os.makedirs(output_dir, exist_ok=True)
+    detail_file = os.path.join(output_dir, f"{split_name}_generation_results.json")
+    with open(detail_file, "w", encoding="utf-8") as handle:
+        json.dump(records, handle, ensure_ascii=False, indent=2)
+
+    total_counter = _new_generation_counter()
+    for label in ("image_textual", "pure_text"):
+        for key in ("rouge1", "rouge2", "rougeL", "bleu", "total"):
+            total_counter[key] += counters[label][key]
+
+    return {
+        "image_textual": _finalize_generation_counter(counters["image_textual"]),
+        "pure_text": _finalize_generation_counter(counters["pure_text"]),
+        "total": _finalize_generation_counter(total_counter),
+    }
 
 
 class MLLMUEvaluator:
-    """MLLMU-Bench 评估器，由 mm_eval.py 调用。"""
+    """Config-driven MLLMU evaluator used by mm_eval.py."""
 
     def __init__(self, eval_cfg, model, processor):
         self.model = model
         self.processor = processor
         self.data_dir = eval_cfg.get("data_dir", "data/MLLMU-Bench")
         self.output_dir = eval_cfg.get("output_dir", "saves/mm_eval/mllmu")
-        self.forget_ratio = eval_cfg.get("forget_split_ratio", 5)
-        self.tasks = eval_cfg.get("tasks", ["classification"])
-        self.max_new_tokens = eval_cfg.get("max_new_tokens", 50)
+        self.forget_ratio = int(eval_cfg.get("forget_split_ratio", 5))
+        self.tasks = list(
+            eval_cfg.get(
+                "tasks",
+                ["classification", "fill_in_the_blank", "generation"],
+            )
+        )
+        self.splits = list(
+            eval_cfg.get(
+                "splits",
+                ["forget", "retain_shared", "retain_celebrity", "test"],
+            )
+        )
+        self.max_new_tokens = int(eval_cfg.get("max_new_tokens", 50))
+        self.generation_max_new_tokens = int(
+            eval_cfg.get("generation_max_new_tokens", 200)
+        )
+        self.test_data_dir = str(
+            eval_cfg.get("test_data_dir", os.path.join(self.data_dir, "Test_Set"))
+        )
+        self.retain_celebrity_data = str(
+            eval_cfg.get(
+                "retain_celebrity_data",
+                os.path.join(self.data_dir, "Retain_Set", "train-00000-of-00001.parquet"),
+            )
+        )
+        self.few_shot_parquet = str(
+            eval_cfg.get(
+                "few_shot_parquet",
+                os.path.join(self.data_dir, "Full_Set", "train-00000-of-00001.parquet"),
+            )
+        )
+        self.shot_num = str(eval_cfg.get("shot_num", "zero_shot"))
+        self.shot_count = _parse_shot_num(self.shot_num)
+        self.max_records = eval_cfg.get("max_records")
+        self.max_records = int(self.max_records) if self.max_records is not None else None
+
+    def _split_path(self, split_name: str) -> str:
+        retain_ratio = 100 - self.forget_ratio
+        mapping = {
+            "forget": os.path.join(self.data_dir, f"forget_{self.forget_ratio}"),
+            "retain": os.path.join(self.data_dir, f"retain_{retain_ratio}"),
+            "retain_shared": os.path.join(self.data_dir, f"retain_{retain_ratio}"),
+            "retain_celebrity": self.retain_celebrity_data,
+            "real": self.retain_celebrity_data,
+            "test": self.test_data_dir,
+        }
+        if split_name not in mapping:
+            raise ValueError(f"Unsupported MLLMU split={split_name}")
+        return mapping[split_name]
+
+    def _forget_ids(self) -> set[str]:
+        forget_path = self._split_path("forget")
+        df = _load_parquet_frame(forget_path)
+        if "ID" not in df.columns:
+            return set()
+        return set(df["ID"].astype(str).tolist())
 
     def evaluate(self):
         os.makedirs(self.output_dir, exist_ok=True)
         results = {}
+        forget_ids = self._forget_ids() if "test" in self.splits else None
+        few_shot_df = (
+            _load_parquet_frame(self.few_shot_parquet)
+            if self.shot_count > 0
+            else None
+        )
 
-        splits = {
-            "forget": f"forget_{self.forget_ratio}",
-            "retain": f"retain_{100 - self.forget_ratio}",
-        }
-
-        for split_name, folder_name in splits.items():
-            parquet = os.path.join(self.data_dir, folder_name, "train-00000-of-00001.parquet")
-            if not os.path.exists(parquet):
-                logger.warning("Skipping %s: %s not found", split_name, parquet)
+        for split_name in self.splits:
+            split_path = self._split_path(split_name)
+            if not os.path.exists(split_path):
+                logger.warning("Skipping %s: %s not found", split_name, split_path)
                 continue
 
             split_results = {}
+            split_filter_ids = forget_ids if split_name == "test" else None
+
             if "classification" in self.tasks:
                 split_results["classification"] = evaluate_classification(
-                    parquet, self.processor, self.model, self.max_new_tokens
+                    split_path,
+                    self.processor,
+                    self.model,
+                    max_new_tokens=self.max_new_tokens,
+                    filter_ids=split_filter_ids,
+                    few_shot_df=few_shot_df,
+                    shot_count=self.shot_count,
+                    max_records=self.max_records,
+                )
+            if "fill_in_the_blank" in self.tasks:
+                split_results["fill_in_the_blank"] = evaluate_fill_in_the_blank(
+                    split_path,
+                    self.processor,
+                    self.model,
+                    max_new_tokens=self.max_new_tokens,
+                    filter_ids=split_filter_ids,
+                    few_shot_df=few_shot_df,
+                    shot_count=self.shot_count,
+                    max_records=self.max_records,
                 )
             if "generation" in self.tasks:
                 split_results["generation"] = evaluate_generation(
-                    parquet, self.processor, self.model, 200
+                    split_path,
+                    self.processor,
+                    self.model,
+                    output_dir=self.output_dir,
+                    split_name=split_name,
+                    max_new_tokens=self.generation_max_new_tokens,
+                    filter_ids=split_filter_ids,
+                    max_records=self.max_records,
                 )
             results[split_name] = split_results
 
         output_file = os.path.join(self.output_dir, "MLLMU_EVAL.json")
-        with open(output_file, "w") as f:
-            json.dump(results, f, indent=2)
+        with open(output_file, "w", encoding="utf-8") as handle:
+            json.dump(results, handle, ensure_ascii=False, indent=2)
         logger.info("MLLMU eval results saved to %s", output_file)
         return results

@@ -1,0 +1,12 @@
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented Know-Surgery, a unified toolkit for controllable knowledge update in large language models. By integrating knowledge editing, machine unlearning, and knowledge injection within a single registry-based framework, Know-Surgery enables researchers to directly compare and combine these complementary paradigms. The toolkit supports 35 text-based methods and 13 multimodal methods across 42 model configurations, covers 5 knowledge types, and is easily extensible through a three-step protocol. Know-Surgery is open-source and includes both CLI and web interfaces for accessibility.
+
+\section*{Limitations}
+
+Know-Surgery currently focuses on decoder-only language models. Support for encoder-decoder architectures (e.g., T5) is limited to methods that do not require specific layer path configurations. Evaluation of procedural and rule-based knowledge editing lacks established benchmarks, and our coverage in these areas relies on injection-based methods rather than direct editing.
+
+\section*{Ethics Statement}
+
+Knowledge editing and unlearning tools carry inherent dual-use risks. While designed to improve model safety and factual accuracy, they could potentially be misused to inject misinformation or selectively remove safety-relevant knowledge. We encourage responsible use and recommend that practitioners document all knowledge modifications applied to deployed models.

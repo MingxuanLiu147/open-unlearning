@@ -1,3 +1,9 @@
 [submodule "code/BREP"]
 	path = code/BREP
 	url = https://github.com/LiangThree/BREP
+[submodule "code/MIP-Editor"]
+	path = code/MIP-Editor
+	url = https://github.com/PreckLi/MIP-Editor.git
+[submodule "code/MMUnlearner"]
+	path = code/MMUnlearner
+	url = https://github.com/Z1zs/MMUnlearner.git

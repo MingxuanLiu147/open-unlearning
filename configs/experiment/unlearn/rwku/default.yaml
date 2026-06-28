@@ -1,0 +1,32 @@
+# @package _global_
+# RWKU unlearning experiment: real-world knowledge unlearning
+# Reference: NeurIPS 2024 D&B — jinzhuoran/RWKU
+
+defaults:
+  - override /model: Llama-3.1-8B-Instruct
+  - override /trainer: GradAscent
+  - override /data: unlearn
+  - override /data/datasets@data.forget: RWKU_forget_level1
+  - override /data/datasets@data.retain: RWKU_neighbor_level1
+  - override /eval: rwku
+
+model:
+  model_args:
+    pretrained_model_name_or_path: meta-llama/Llama-3.1-8B-Instruct
+
+forget_split: forget_level1
+retain_split: neighbor_level1
+question_key: "question"
+
+eval:
+  rwku:
+    forget_split: ${forget_split}
+    question_key: ${question_key}
+    batch_size: 4
+
+trainer:
+  args:
+    num_train_epochs: 5
+    per_device_train_batch_size: 4
+    gradient_accumulation_steps: 4
+    learning_rate: 1e-5

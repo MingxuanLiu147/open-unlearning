@@ -30,6 +30,9 @@
           <el-tab-pane :label="$t('results.radar')">
             <RadarChart :data="compareData" :labels="selectedLabels" />
           </el-tab-pane>
+          <el-tab-pane :label="$t('results.behavior')">
+            <BehaviorCompare :labels="selectedLabels" />
+          </el-tab-pane>
         </el-tabs>
       </el-col>
     </el-row>
@@ -41,6 +44,7 @@ import { ref, onMounted } from 'vue'
 import { resultsApi } from '@/api'
 import MetricsTable from '@/components/results/MetricsTable.vue'
 import RadarChart from '@/components/results/RadarChart.vue'
+import BehaviorCompare from '@/components/results/BehaviorCompare.vue'
 
 const runs = ref<any[]>([])
 const selectedLabels = ref<string[]>([])

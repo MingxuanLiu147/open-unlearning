@@ -14,6 +14,7 @@ from omegaconf import DictConfig
 from evals.tofu import TOFUEvaluator
 from evals.muse import MUSEEvaluator
 from evals.lm_eval import LMEvalEvaluator
+from evals.rwku import RWKUEvaluator
 
 # Knowledge Editing 评估器
 from evals.edit import (
@@ -96,6 +97,7 @@ def get_evaluators(eval_cfgs: DictConfig, **kwargs):
 _register_evaluator(TOFUEvaluator)
 _register_evaluator(MUSEEvaluator)
 _register_evaluator(LMEvalEvaluator)
+_register_evaluator(RWKUEvaluator)
 
 # Register Knowledge Editing evaluators
 _register_evaluator(EditEvaluator)
@@ -104,6 +106,24 @@ _register_evaluator(EditGeneralizationEvaluator)
 _register_evaluator(EditLocalityEvaluator)
 _register_evaluator(EditPortabilityEvaluator)
 _register_evaluator(EditComprehensiveEvaluator)
+
+# Register MQuAKE multi-hop evaluator
+from evals.mquake import MQuAKEMultiHopEvaluator
+
+_register_evaluator(MQuAKEMultiHopEvaluator)
+
+# Register Multimodal Editing evaluators
+from evals.mm_edit import (
+    MMEditReliabilityEvaluator,
+    MMEditGeneralizationEvaluator,
+    MMEditLocalityEvaluator,
+    MMEditPortabilityEvaluator,
+)
+
+_register_evaluator(MMEditReliabilityEvaluator)
+_register_evaluator(MMEditGeneralizationEvaluator)
+_register_evaluator(MMEditLocalityEvaluator)
+_register_evaluator(MMEditPortabilityEvaluator)
 
 # Register Knowledge Injection evaluators
 _register_evaluator(InjectEvaluator)

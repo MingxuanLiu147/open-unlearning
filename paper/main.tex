@@ -1,0 +1,60 @@
+\documentclass[11pt]{article}
+
+\usepackage[review]{acl}
+
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{listings}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+
+\title{Know-Surgery: A Unified Toolkit for Controllable Knowledge Update in Large Language Models}
+
+\author{
+  Mingxuan Liu \\
+  Affiliation \\
+  \texttt{email@example.com}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Deployed large language models (LLMs) require continuous knowledge updates to correct errors, remove harmful content, and incorporate new information.
+Existing tools address these needs in isolation: knowledge editing frameworks like EasyEdit focus solely on modifying factual associations, while unlearning toolkits like OpenUnlearning target only data removal.
+We present \textbf{Know-Surgery}, a unified toolkit that supports three complementary knowledge operations---\textit{injection} (adding new knowledge via parameter-efficient fine-tuning), \textit{deletion} (removing knowledge via machine unlearning), and \textit{editing} (modifying specific knowledge via locate-and-edit methods)---within a single Hydra-configured framework.
+Know-Surgery integrates 48 methods across the three operations and their multimodal variants, covers five knowledge types (factual, event, conceptual, procedural, and rule-based), and extends to multimodal scenarios.
+Users can add new models, methods, and datasets in three steps through a registry-based architecture.
+Experiments on standard benchmarks (CounterFact, ZsRE, TOFU, MUSE) demonstrate that Know-Surgery reproduces published results while enabling direct cross-paradigm comparisons.
+The toolkit is available at \url{https://github.com/xxx/know-surgery} with a Flask\,+\,Vue web interface for interactive exploration.
+\end{abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-system}
+\input{sections/03-features}
+\input{sections/04-demo}
+\input{sections/05-evaluation}
+\input{sections/06-conclusion}
+
+\bibliography{references}
+
+\appendix
+\input{sections/appendix}
+
+\end{document}

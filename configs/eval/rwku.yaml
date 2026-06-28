@@ -1,0 +1,24 @@
+# @package eval.rwku
+# RWKU evaluation: real-world knowledge unlearning on 200 famous people
+# Uses the same metric system as TOFU (MIA, probability, ROUGE, etc.)
+
+defaults:
+  - tofu_metrics:
+    - forget_Q_A_Prob
+    - forget_Q_A_ROUGE
+    - forget_Truth_Ratio
+    - model_utility
+    - privleak
+    - mia_loss
+    - mia_min_k
+    - mia_min_k_plus_plus
+    - mia_zlib
+
+handler: RWKUEvaluator
+output_dir: ${paths.output_dir}
+metrics: {}
+overwrite: false
+forget_split: forget_level1
+retain_split: neighbor_level1
+question_key: "question"
+batch_size: 4

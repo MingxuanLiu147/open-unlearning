@@ -1,7 +1,32 @@
+import json
+import logging
+
 import torch
 from torch.utils.data import Dataset
 
 from data.utils import load_hf_dataset, preprocess_chat_instance, add_dataset_index
+
+logger = logging.getLogger(__name__)
+
+
+def _load_local_qa(data_path: str):
+    """Load QA data from a local JSON or JSONL file.
+
+    Expected per-record schema: {"question": str, "answer": str}
+    """
+    from datasets import Dataset as HFDataset
+
+    records = []
+    with open(data_path, "r", encoding="utf-8") as f:
+        if data_path.endswith(".jsonl"):
+            for line in f:
+                line = line.strip()
+                if line:
+                    records.append(json.loads(line))
+        else:
+            raw = json.load(f)
+            records = raw if isinstance(raw, list) else [raw]
+    return HFDataset.from_list(records)
 
 
 class QADataset(Dataset):
@@ -10,12 +35,17 @@ class QADataset(Dataset):
     典型用途：TOFU 等基准的 question/answer 数据。
     - 支持 few-shot：可以在目标 QA 前拼接若干 in-context 示例
     - 输出：满足监督微调格式的 input_ids / labels / attention_mask + index
+
+    数据来源（按优先级）：
+    1. ``data_path`` -- 本地 JSON / JSONL 文件（自定义数据入口）
+    2. ``hf_args``   -- HuggingFace ``load_dataset`` 参数
     """
     def __init__(
         self,
-        hf_args,
         template_args,
         tokenizer,
+        hf_args=None,
+        data_path=None,
         question_key="question",
         answer_key="answer",
         few_shot_dataset_hf_args=None,
@@ -25,10 +55,15 @@ class QADataset(Dataset):
         super(QADataset, self).__init__()
         self.tokenizer = tokenizer
         self.max_length = max_length
-        # 从 HuggingFace Hub 或本地缓存中加载原始 QA 数据
-        # 示例：hf_args = {"path": "locuslab/TOFU", "name": "forget10", "split": "train"}
-        self.data = load_hf_dataset(**hf_args)
-        # 为每条数据添加一个 "index" 字段，便于在训练/评估时追踪到原始样本
+
+        if data_path:
+            self.data = _load_local_qa(data_path)
+            logger.info("QADataset: loaded %d samples from %s", len(self.data), data_path)
+        elif hf_args:
+            self.data = load_hf_dataset(**hf_args)
+        else:
+            raise ValueError("QADataset requires either data_path or hf_args")
+
         self.data = add_dataset_index(self.data)
         self.fs_data = None
         # few-shot 数据（可选）：当提供 few_shot_dataset_hf_args 时，

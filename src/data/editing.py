@@ -37,6 +37,10 @@ class EditingSample:
     rephrase_prompts: Optional[List[str]] = None
     locality_inputs: Optional[Dict[str, List[Dict[str, str]]]] = None
     portability_inputs: Optional[Dict[str, List[Dict[str, str]]]] = None
+    # Multimodal fields (Optional, backward-compatible with text-only editing)
+    image: Optional[Any] = None
+    image_rephrase: Optional[Any] = None
+    multimodal_locality_inputs: Optional[Dict[str, Any]] = None
 
 
 class EditingDataset(Dataset):
@@ -398,6 +402,9 @@ class EditingDataset(Dataset):
                 target_old=sample.target_old,
                 locality_inputs=sample.locality_inputs,
                 portability_inputs=sample.portability_inputs,
+                image=sample.image,
+                image_rephrase=sample.image_rephrase,
+                multimodal_locality_inputs=sample.multimodal_locality_inputs,
             )
             for sample in samples
         ]
@@ -827,4 +834,35 @@ class LEMEDataset(EditingDataset):
             item.get("requested_rewrite", {}),
             rephrase_prompts=item.get("paraphrase_prompts"),
             portability_inputs=portability_inputs,
+        )
+
+
+class EditEveryDataset(EditingDataset):
+    """EditEvery dataset from AnyEdit -- general-purpose editing benchmark.
+
+    Paper / project: https://github.com/TrustedLLM/UnKE (AnyEdit extension)
+
+    Contains 552 long-form QA pairs across categories such as math and
+    reasoning.  Each sample only has *prompt* and *target_new*; no rephrase,
+    locality, or portability annotations.
+    """
+
+    def __init__(
+        self,
+        tokenizer=None,
+        data_path: Optional[str] = None,
+        **kwargs,
+    ):
+        super().__init__(tokenizer=tokenizer, data_path=data_path, **kwargs)
+
+    def _default_data_path(self, split: Optional[str]) -> Optional[str]:
+        return "data/edit/editevery/editevery.json"
+
+    def normalize_record(
+        self, item: Dict[str, Any], index: int
+    ) -> Optional[Union[EditingSample, List[EditingSample]]]:
+        return self._build_sample(
+            prompt=item.get("question", ""),
+            subject=item.get("category", ""),
+            target_new=item.get("answer", ""),
         )

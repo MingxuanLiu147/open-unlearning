@@ -27,40 +27,67 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useExperimentStore } from '@/stores/experiment'
 import { useRunnerStore } from '@/stores/runner'
 import { runnerApi } from '@/api'
 import { useRouter } from 'vue-router'
 
+const { t } = useI18n()
 const store = useExperimentStore()
 const runnerStore = useRunnerStore()
 const router = useRouter()
 
-const canRun = computed(() => store.selectedModel && store.selectedTrainer)
+const canRun = computed(() => {
+  if (store.mode === 'eval') {
+    return !!(store.selectedModel && store.selectedEval)
+  }
+  return !!(store.selectedModel && store.selectedTrainer)
+})
+
+function safeStr(v: any): string {
+  if (typeof v === 'string') return v
+  if (v == null) return ''
+  return String(v)
+}
 
 const commandText = computed(() => {
+  if (store.mode === 'eval') {
+    const parts = ['python src/eval.py', '  --config-name=eval.yaml']
+    if (store.selectedEval) parts.push(`  eval=${safeStr(store.selectedEval)}`)
+    if (store.selectedModel) parts.push(`  model=${safeStr(store.selectedModel)}`)
+    parts.push(`  task_name=${store.taskName}`)
+    for (const [k, v] of Object.entries(store.overrides)) {
+      parts.push(`  ${k}=${safeStr(v)}`)
+    }
+    return parts.join(' \\\n')
+  }
+
   const parts = ['python src/train.py']
   parts.push(`  --config-name=${store.mode}.yaml`)
-  if (store.selectedExperiment) parts.push(`  experiment=${store.selectedExperiment}`)
-  if (store.selectedModel) parts.push(`  model=${store.selectedModel}`)
-  if (store.selectedTrainer) parts.push(`  trainer=${store.selectedTrainer}`)
+  if (store.selectedExperiment) parts.push(`  experiment=${safeStr(store.selectedExperiment)}`)
+  if (store.selectedModel) parts.push(`  model=${safeStr(store.selectedModel)}`)
+  if (store.selectedTrainer) parts.push(`  trainer=${safeStr(store.selectedTrainer)}`)
   parts.push(`  task_name=${store.taskName}`)
-  if (store.selectedEval) parts.push(`  eval=${store.selectedEval}`)
+  if (store.selectedEval) parts.push(`  eval=${safeStr(store.selectedEval)}`)
 
   const ds = store.selectedDatasets
-  if (ds.forget) parts.push(`  data/datasets@data.forget=${ds.forget}`)
-  if (ds.retain) parts.push(`  data/datasets@data.retain=${ds.retain}`)
-  if (ds.edit) parts.push(`  data/datasets@data.edit=${ds.edit}`)
-  if (ds.train) parts.push(`  data/datasets@data.train=${ds.train}`)
+  if (ds.forget) parts.push(`  data/datasets@data.forget=${safeStr(ds.forget)}`)
+  if (ds.retain) parts.push(`  data/datasets@data.retain=${safeStr(ds.retain)}`)
+  if (ds.edit) parts.push(`  data/datasets@data.edit=${safeStr(ds.edit)}`)
+  if (ds.train) parts.push(`  data/datasets@data.train=${safeStr(ds.train)}`)
 
-  parts.push(`  trainer.args.seed=${store.seed}`)
+  for (const [k, v] of Object.entries(store.overrides)) {
+    parts.push(`  ${k}=${safeStr(v)}`)
+  }
+
   return parts.join(' \\\n')
 })
 
 function copy() {
   navigator.clipboard.writeText(commandText.value).then(() => {
-    ElMessage.success('Copied!')
+    ElMessage.success(t('copilot.copySuccess'))
   })
 }
 
@@ -69,17 +96,17 @@ async function startRun() {
   const body = {
     mode: store.mode,
     model: store.selectedModel,
-    trainer: store.selectedTrainer,
+    trainer: store.mode === 'eval' ? undefined : store.selectedTrainer,
     experiment: store.selectedExperiment || undefined,
     task_name: store.taskName,
     overrides: store.overrides,
     eval_suite: store.selectedEval || undefined,
     gpu: store.gpu,
   }
-  const res = await runnerApi.start(body)
+  const res = await runnerApi.start(body) as { ok?: boolean; error?: string; command?: string }
   if (res.ok) {
     runnerStore.running = true
-    runnerStore.command = res.command
+    runnerStore.command = res.command || ''
     router.push('/monitor')
   } else {
     ElMessage.error(res.error || 'Failed to start')

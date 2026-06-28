@@ -1,0 +1,10 @@
+model_family: llava_onevision
+model_path: llava-hf/llava-onevision-qwen2-7b-ov-hf
+processor_path: llava-hf/llava-onevision-qwen2-7b-ov-hf
+torch_dtype: bfloat16
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 16
+  dropout: 0.05

@@ -17,6 +17,22 @@ data/
 !*/data/ 
 evals/
 !*/evals/  
+
+# Frontend local dependencies/build artifacts
+node_modules/
+*.tsbuildinfo
+new_ui/frontend/dist/
+
+# Local experiment/model artifacts
+plan/**/rerun*/
+**/checkpoint-*/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.gguf
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

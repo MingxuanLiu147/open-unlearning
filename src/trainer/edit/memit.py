@@ -149,7 +149,7 @@ class MEMITEditor(EditTrainer):
         tokenizer = self.tokenizer
         model = self.model
 
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        inputs = tokenizer(prompt, return_tensors="pt").to(self._input_device())
         subject_tokens = tokenizer(subject, add_special_tokens=False)["input_ids"]
 
         # 定位 subject
@@ -161,29 +161,28 @@ class MEMITEditor(EditTrainer):
                 subject_end = i + len(subject_tokens) - 1
                 break
 
-        # 获取隐藏状态
-        hidden_states = []
+        captured = []
 
-        def hook_fn(module, input, output):
-            if isinstance(output, tuple):
-                hidden_states.append(output[0])
-            else:
-                hidden_states.append(output)
+        def hook_fn(module, inp, output):
+            x = inp[0] if isinstance(inp, tuple) else inp
+            captured.append(x)
 
         layer = self._get_layer_module(model, layer_idx)
-        handle = layer.register_forward_hook(hook_fn)
+        mlp_proj = self._get_mlp_projection(layer)
+        hook_target = mlp_proj if mlp_proj is not None else layer
+        handle = hook_target.register_forward_hook(hook_fn)
 
         with torch.no_grad():
             model(**inputs)
 
         handle.remove()
 
-        key = hidden_states[0][0, subject_end, :].clone()
+        key = captured[0][0, subject_end, :].clone()
         return key
 
     def _get_layer_module(self, model: nn.Module, layer_idx: int):
         """获取指定层模块"""
-        for attr_name in ["model.layers", "transformer.h", "gpt_neox.layers"]:
+        for attr_name in ["model.layers", "transformer.h", "gpt_neox.layers", "transformer.encoder.layers"]:
             try:
                 layers = self._get_module_by_name(model, attr_name)
                 return layers[layer_idx]

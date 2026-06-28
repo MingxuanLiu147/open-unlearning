@@ -1,0 +1,15 @@
+defaults:
+  - GradDiff
+
+handler: SOUL
+method_args:
+  gamma: 1.0
+  alpha: 1.0
+  retain_loss_type: NLL
+  sophia_lr: 1e-4
+  sophia_betas:
+    - 0.9
+    - 0.95
+  sophia_rho: 0.04
+  sophia_eps: 1e-5
+  hessian_update_freq: 10

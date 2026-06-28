@@ -134,7 +134,8 @@ def _is_success(result: Any) -> bool:
 
 def _to_jsonable(value: Any) -> Any:
     if is_dataclass(value):
-        return asdict(value)
+        d = asdict(value)
+        return {k: _to_jsonable(v) for k, v in d.items()}
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, Mapping):
@@ -146,4 +147,10 @@ def _to_jsonable(value: Any) -> Any:
             return value.item()
         except (TypeError, ValueError):
             return str(value)
+    try:
+        from PIL.Image import Image as PILImage
+        if isinstance(value, PILImage):
+            return f"<PIL.Image mode={value.mode} size={value.size}>"
+    except ImportError:
+        pass
     return value

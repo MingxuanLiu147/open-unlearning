@@ -1,0 +1,65 @@
+\section{System Overview}
+\label{sec:system}
+
+Know-Surgery is built on a modular architecture with four decoupled registries---\texttt{MODEL}, \texttt{DATASET}, \texttt{TRAINER}, and \texttt{EVALUATOR}---orchestrated by Hydra configuration.
+Figure~\ref{fig:architecture} illustrates the overall design.
+
+\subsection{Unified Entry Point}
+
+All three operations share a single training script (\texttt{train.py}) that dispatches to the appropriate pipeline based on the \texttt{mode} parameter:
+
+\begin{lstlisting}
+# Knowledge Editing
+python src/train.py mode=edit \
+  trainer=edit/ROME model=Llama-3.1-8B \
+  experiment=edit/zsre/default
+
+# Machine Unlearning
+python src/train.py mode=unlearn \
+  trainer=SimNPO model=Llama-3.1-8B \
+  experiment=unlearn/tofu/default
+
+# Knowledge Injection
+python src/train.py mode=inject \
+  trainer=inject/LoRA model=Qwen2.5-7B \
+  experiment=inject/alpaca/default
+\end{lstlisting}
+
+\subsection{Registry-Based Architecture}
+
+Each component type has a dedicated registry that maps string names to Python classes:
+
+\begin{itemize}
+\setlength\itemsep{0pt}
+\item \texttt{TRAINER\_REGISTRY}: 48 method implementations (15 edit + 14 unlearn + 6 inject + 13 multimodal)
+\item \texttt{DATASET\_REGISTRY}: 20+ dataset handlers covering QA, editing, injection, and multimodal formats
+\item \texttt{MODEL\_REGISTRY}: supports any HuggingFace \texttt{AutoModelForCausalLM}-compatible model via YAML config
+\item \texttt{EVALUATOR\_REGISTRY}: 18 evaluators spanning TOFU, MUSE, WMDP, and edit-specific metrics
+\end{itemize}
+
+Components are decoupled: methods do not depend on specific datasets or models.
+A new component requires only (1) a Python class inheriting the base, (2) one registration line, and (3) a YAML config file.
+
+\subsection{Three Knowledge Operation Pipelines}
+
+\paragraph{Editing Pipeline.}
+Edit requests pass through \texttt{build\_edit\_requests} $\to$ \texttt{execute\_edit\_requests} $\to$ \texttt{save\_edit\_artifacts}.
+Each editor implements an \texttt{edit(requests)} method that modifies model weights and returns a backup for rollback.
+Supported method families include locate-then-edit (ROME, MEMIT, AlphaEdit), meta-learning (MEND, MALMEN, InstructEdit), memory-based (GRACE, WISE, IKE, SERAC), and unstructured editing (UNKE, AnyEdit).
+
+\paragraph{Unlearning Pipeline.}
+Forget and retain datasets are combined into a \texttt{ForgetRetainDataset} that yields paired samples.
+Each unlearning trainer overrides \texttt{compute\_loss} to implement its objective (gradient ascent, preference optimization, representation manipulation, etc.).
+
+\paragraph{Injection Pipeline.}
+PEFT adapters (LoRA, DoRA, AdaLoRA, LoReFT, BREP) are applied to the base model.
+The injection trainer handles adapter initialization, training, and optional merging.
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox{0.95\columnwidth}{\centering\textit{[Architecture diagram placeholder]}\\
+\small train.py $\to$ Registry dispatch $\to$ Edit/Unlearn/Inject pipelines\\
+Hydra configs combine Model + Trainer + Data + Eval}}
+\caption{Know-Surgery architecture. A unified entry point dispatches to three pipelines through registry-based component resolution.}
+\label{fig:architecture}
+\end{figure}

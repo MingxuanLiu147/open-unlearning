@@ -34,7 +34,11 @@ def create_app() -> Flask:
     @app.route("/skills")
     def spa_entry():
         if FRONTEND_DIST.exists() and (FRONTEND_DIST / "index.html").exists():
-            return send_from_directory(str(FRONTEND_DIST), "index.html")
+            resp = send_from_directory(str(FRONTEND_DIST), "index.html")
+            resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+            resp.headers["Pragma"] = "no-cache"
+            resp.headers["Expires"] = "0"
+            return resp
         return "<h3>Frontend not built yet. Run <code>cd new_ui/frontend && npm run build</code></h3>", 200
 
     return app

@@ -8,8 +8,12 @@ Know-Surgery 数据集注册表
 - Injection 数据集: InjectDataset, AlpacaDataset 等
 """
 
+import logging
+import random
 from typing import Dict, Any, Union
+
 from omegaconf import DictConfig
+from torch.utils.data import Dataset, Subset
 
 from data.qa import QADataset, QAwithIdkDataset, QAwithAlternateDataset
 from data.collators import (
@@ -24,6 +28,7 @@ from data.editing import (
     AKEWDataset,
     ConceptEditDataset,
     CounterFactDataset,
+    EditEveryDataset,
     EditingDataset,
     ELKENDataset,
     LEMEDataset,
@@ -33,6 +38,8 @@ from data.editing import (
 
 # Knowledge Injection 数据集
 from data.inject import InjectDataset, AlpacaDataset, ShareGPTDataset
+
+logger = logging.getLogger(__name__)
 
 # 统一管理数据集类的注册表：
 #   key: 类名字符串（如 "QADataset"）
@@ -86,22 +93,42 @@ def get_datasets(dataset_cfgs: Union[Dict, DictConfig], **kwargs):
     return dataset
 
 
+def _auto_split_dataset(
+    dataset: Dataset, val_ratio: float = 0.1, seed: int = 42,
+) -> tuple:
+    """Split a single Dataset into (train_subset, val_subset) using indices."""
+    n = len(dataset)
+    indices = list(range(n))
+    rng = random.Random(seed)
+    rng.shuffle(indices)
+    val_size = max(1, int(n * val_ratio))
+    val_idx = indices[:val_size]
+    train_idx = indices[val_size:]
+    logger.info("auto_split: %d total -> %d train + %d val", n, len(train_idx), len(val_idx))
+    return Subset(dataset, train_idx), Subset(dataset, val_idx)
+
+
 def get_data(data_cfg: DictConfig, mode="train", **kwargs):
     """高层数据加载入口。
 
     根据 Hydra 的 data 配置构造完整的数据集字典，支持：
       - mode="train"/"finetune"/"inject"/"edit": 返回各个 split 原始数据集
       - mode="unlearn": 将 forget / retain 等训练相关 split 组合成一个 ForgetRetainDataset，挂到 "train" 键下
+
+    支持 ``split_args`` 配置自动拆分训练集/验证集::
+
+        data:
+          split_args:
+            auto_split: true
+            val_ratio: 0.1
+            seed: 42
     """
     data = {}
-    # DictConfig -> 普通 dict，便于 pop / 迭代
     data_cfg = dict(data_cfg)
-    # anchor 控制 ForgetRetainDataset 的锚定数据集（默认 forget）
     anchor = data_cfg.pop("anchor", "forget")
+    split_args = data_cfg.pop("split_args", None)
+
     for split, dataset_cfgs in data_cfg.items():
-        # 兼容 edit/inject 数据集配置中的同名包裹层，例如:
-        # data.edit.edit.{dataset} / data.train.train.{dataset}
-        # 统一解包为 data.edit.{dataset} / data.train.{dataset}
         if (
             isinstance(dataset_cfgs, (dict, DictConfig))
             and len(dataset_cfgs) == 1
@@ -109,19 +136,22 @@ def get_data(data_cfg: DictConfig, mode="train", **kwargs):
             and isinstance(dataset_cfgs[split], (dict, DictConfig))
         ):
             dataset_cfgs = dataset_cfgs[split]
-        # 对每个 split（forget/retain/eval/...）调用 get_datasets
         data[split] = get_datasets(dataset_cfgs, **kwargs)
+
+    if split_args and split_args.get("auto_split", False):
+        val_ratio = split_args.get("val_ratio", 0.1)
+        seed = split_args.get("seed", 42)
+        if "train" in data and "eval" not in data:
+            data["train"], data["eval"] = _auto_split_dataset(
+                data["train"], val_ratio=val_ratio, seed=seed,
+            )
+
     if mode in ("train", "finetune", "inject", "edit"):
-        # 普通训练类场景：直接按 split 返回
         return data
     elif mode == "unlearn":
-        # 遗忘场景：把除了 eval / test 以外的 split 合并成一个组合数据集
         unlearn_splits = {k: v for k, v in data.items() if k not in ("eval", "test")}
-        # 典型情况：{"forget": QADataset, "retain": QADataset}
         unlearn_dataset = ForgetRetainDataset(**unlearn_splits, anchor=anchor)
-        # 统一挂在 "train" 键下，便于 Trainer 使用
         data["train"] = unlearn_dataset
-        # 清理掉原始的 forget / retain 键，只保留 train + eval/test
         for split in unlearn_splits:
             data.pop(split)
     return data
@@ -185,6 +215,15 @@ _register_data(UnKEDataset)
 _register_data(ConceptEditDataset)
 _register_data(AKEWDataset)
 _register_data(LEMEDataset)
+_register_data(EditEveryDataset)
+
+# Register Multimodal Editing datasets
+from data.mm_editing import MMEditVQADataset, MMEditCaptionDataset, MMKEBenchDataset, VLKEBDataset
+
+_register_data(MMEditVQADataset)
+_register_data(MMEditCaptionDataset)
+_register_data(MMKEBenchDataset)
+_register_data(VLKEBDataset)
 
 # Register Knowledge Injection datasets
 _register_data(InjectDataset)

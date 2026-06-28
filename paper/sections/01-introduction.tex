@@ -1,0 +1,30 @@
+\section{Introduction}
+\label{sec:intro}
+
+Large language models (LLMs) inevitably accumulate outdated facts, biased associations, and sensitive information during pre-training.
+Post-deployment, practitioners need to \textit{update} this knowledge without costly full retraining.
+Three complementary paradigms have emerged to address different facets of this need:
+
+\begin{itemize}
+\setlength\itemsep{0pt}
+\item \textbf{Knowledge Editing} modifies specific factual associations through targeted parameter updates~\cite{meng2022rome,meng2023memit,mitchell2022mend}.
+\item \textbf{Machine Unlearning} removes the influence of particular training data to comply with privacy regulations or safety requirements~\cite{maini2024tofu,shi2024muse}.
+\item \textbf{Knowledge Injection} adds new capabilities or domain knowledge via parameter-efficient fine-tuning~\cite{hu2022lora,liu2024dora}.
+\end{itemize}
+
+However, existing toolkits treat these paradigms in isolation.
+EasyEdit~\cite{wang2024easyedit} provides a comprehensive knowledge editing framework but does not support unlearning or injection.
+OpenUnlearning~\cite{dorna2025openunlearning} unifies unlearning benchmarks but lacks editing capabilities.
+LLaMA-Factory~\cite{zheng2024llamafactory} focuses on fine-tuning without evaluating the impact on existing knowledge.
+This fragmentation forces researchers to maintain separate codebases, making cross-paradigm comparisons difficult.
+
+We present \textbf{Know-Surgery}, a unified toolkit that integrates all three paradigms under a single framework.
+Our key contributions are:
+
+\begin{enumerate}
+\setlength\itemsep{0pt}
+\item A \textbf{unified architecture} based on Hydra configuration and a registry pattern, supporting 48 methods across editing (15), unlearning (14), and injection (6)---plus 13 multimodal variants---through a single entry point.
+\item Coverage of \textbf{five knowledge types}---factual, event, conceptual, procedural, and rule-based---with 8+ editing datasets and standardized evaluation.
+\item \textbf{Multimodal extensibility} through a dedicated sidecar supporting vision-language model unlearning on CLEAR and MLLMU-Bench benchmarks.
+\item A \textbf{three-step extension protocol} enabling users to add new models, methods, or datasets by implementing one class, registering it, and creating a YAML config.
+\end{enumerate}

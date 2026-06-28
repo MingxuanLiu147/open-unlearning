@@ -13,7 +13,8 @@
       <el-col :span="6">
         <RunHistory />
       </el-col>
-      <el-col :span="18">
+      <el-col :span="18" class="right-col">
+        <LossChart />
         <LogStream />
       </el-col>
     </el-row>
@@ -26,6 +27,7 @@ import { useI18n } from 'vue-i18n'
 import { useRunnerStore } from '@/stores/runner'
 import LogStream from '@/components/monitor/LogStream.vue'
 import RunHistory from '@/components/monitor/RunHistory.vue'
+import LossChart from '@/components/monitor/LossChart.vue'
 
 const { t } = useI18n()
 const runnerStore = useRunnerStore()
@@ -54,4 +56,9 @@ const statusText = computed(() => {
   margin-bottom: 16px;
 }
 .monitor-header h2 { font-size: 18px; font-weight: 600; }
+.right-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 </style>

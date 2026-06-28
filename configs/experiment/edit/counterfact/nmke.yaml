@@ -1,0 +1,15 @@
+# CounterFact + NMKE 神经元级编辑实验
+
+defaults:
+  - override /model: Qwen2.5-7B-Instruct
+  - override /trainer: edit/NMKE
+  - override /data: edit
+  - override /eval: edit
+
+data:
+  edit:
+    CounterFact_edit:
+      handler: CounterFactDataset
+      args:
+        split: "train"
+        max_length: 512

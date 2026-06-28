@@ -9,6 +9,37 @@ from typing import Dict, List, Optional
 import yaml
 
 
+_MM_FAMILIES = frozenset({
+    "llava", "qwen2_5vl", "qwen2vl", "qwen3_vl",
+    "instructblip", "internvl", "blip2",
+})
+
+
+def _infer_model_modality(name: str, cfg: Dict) -> str:
+    explicit = cfg.get("modality", "")
+    if explicit in ("multimodal", "text", "mm"):
+        return "multimodal" if explicit in ("multimodal", "mm") else "text"
+    family = (cfg.get("model_family") or "").lower()
+    if family in _MM_FAMILIES:
+        return "multimodal"
+    nlow = name.lower()
+    path_hint = ""
+    model_args = cfg.get("model_args") or {}
+    if isinstance(model_args, dict):
+        path_hint = str(model_args.get("pretrained_model_name_or_path", "")).lower()
+    for h in (nlow, path_hint):
+        if any(x in h for x in ("vl", "llava", "blip", "internvl", "vision", "qwen2-vl", "qwen3-vl")):
+            return "multimodal"
+    return "text"
+
+
+def _trainer_modality(trainer_name: str) -> str:
+    for part in trainer_name.replace("\\", "/").split("/"):
+        if part.startswith("MM") or part.startswith("mm_"):
+            return "multimodal"
+    return "text"
+
+
 class ConfigLoader:
 
     def __init__(self, project_root: str = None):
@@ -35,10 +66,11 @@ class ConfigLoader:
             cfg = self._load_yaml(yf) or {}
             model_args = cfg.get("model_args", {})
             name = yf.stem
+            modality = _infer_model_modality(name, cfg)
             results.append({
                 "name": name,
                 "path": model_args.get("pretrained_model_name_or_path", name),
-                "modality": cfg.get("modality", "text"),
+                "modality": modality,
                 "dtype": model_args.get("torch_dtype", ""),
                 "attn": model_args.get("attn_implementation", ""),
             })
@@ -57,7 +89,11 @@ class ConfigLoader:
                 if yf.stem in ("finetune",):
                     continue
                 cfg = self._load_yaml(yf) or {}
-                items.append({"name": yf.stem, "mode": "unlearn", "config": cfg})
+                nm = yf.stem
+                items.append({
+                    "name": nm, "mode": "unlearn", "config": cfg,
+                    "modality": _trainer_modality(nm),
+                })
         elif mode == "inject":
             sub = trainer_dir / "inject"
             if sub.exists():
@@ -65,7 +101,11 @@ class ConfigLoader:
                     if yf.stem.startswith("base"):
                         continue
                     cfg = self._load_yaml(yf) or {}
-                    items.append({"name": f"inject/{yf.stem}", "mode": "inject", "config": cfg})
+                    nm = f"inject/{yf.stem}"
+                    items.append({
+                        "name": nm, "mode": "inject", "config": cfg,
+                        "modality": _trainer_modality(nm),
+                    })
         elif mode == "edit":
             sub = trainer_dir / "edit"
             if sub.exists():
@@ -73,7 +113,11 @@ class ConfigLoader:
                     if yf.stem.startswith("base"):
                         continue
                     cfg = self._load_yaml(yf) or {}
-                    items.append({"name": f"edit/{yf.stem}", "mode": "edit", "config": cfg})
+                    nm = f"edit/{yf.stem}"
+                    items.append({
+                        "name": nm, "mode": "edit", "config": cfg,
+                        "modality": _trainer_modality(nm),
+                    })
         else:
             for yf in sorted(trainer_dir.rglob("*.yaml")):
                 rel = yf.relative_to(trainer_dir)
@@ -81,7 +125,10 @@ class ConfigLoader:
                 if "base" in cfg_name:
                     continue
                 cfg = self._load_yaml(yf) or {}
-                items.append({"name": cfg_name, "mode": "all", "config": cfg})
+                items.append({
+                    "name": cfg_name, "mode": "all", "config": cfg,
+                    "modality": _trainer_modality(cfg_name),
+                })
         return items
 
     # ── datasets ────────────────────────────────────────────────────

@@ -1,0 +1,8 @@
+# MQuAKE-3k: Multi-hop Question Answering for Knowledge Editing (3000 hard cases)
+# EMNLP 2023 — large-scale multi-hop benchmark (2-4 hops)
+
+MQuAKE_3k_edit:
+  handler: MQuAKEDataset
+  args:
+    variant: "3k"
+    max_length: 512

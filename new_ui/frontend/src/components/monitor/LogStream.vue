@@ -6,7 +6,7 @@
     </div>
     <div class="log-area" ref="logEl">
       <div v-for="(line, i) in runnerStore.logs" :key="i" class="log-line">{{ line }}</div>
-      <div v-if="runnerStore.logs.length === 0" class="log-empty">No logs yet.</div>
+      <div v-if="runnerStore.logs.length === 0" class="log-empty">{{ $t('monitor.noLogsYet') }}</div>
     </div>
   </div>
 </template>
@@ -30,8 +30,9 @@ function connect() {
   if (es) es.close()
   es = runnerApi.connectLog(
     (d) => { runnerStore.addLog(d.line); scrollBottom() },
-    () => {
+    (code) => {
       runnerStore.running = false
+      if (code !== undefined) runnerStore.exitCode = code ?? null
       es = null
     },
   )

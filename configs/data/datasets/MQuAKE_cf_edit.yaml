@@ -1,0 +1,8 @@
+# MQuAKE-CF: Multi-hop Question Answering for Knowledge Editing (CounterFact variant)
+# EMNLP 2023 — multi-hop reasoning benchmark
+
+MQuAKE_cf_edit:
+  handler: MQuAKEDataset
+  args:
+    variant: "cf"
+    max_length: 512

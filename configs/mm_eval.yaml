@@ -1,4 +1,7 @@
 defaults:
-  - model: Qwen2VL-2B
+  - model: Qwen3-VL-4B
   - eval: mllmu
   - _self_
+
+device: cuda
+require_cuda: true

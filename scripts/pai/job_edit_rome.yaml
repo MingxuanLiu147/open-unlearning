@@ -1,0 +1,53 @@
+protocolVersion: 2
+name: open-unlearning-edit-rome
+type: job
+jobRetryCount: 0
+
+prerequisites:
+  - type: dockerimage
+    uri: "210.75.240.150:30003/liumingxuan/open-unlearning:v1"
+    name: docker_image0
+
+taskRoles:
+  taskrole:
+    instances: 1
+    completion:
+      minFailedInstances: 1
+    taskRetryCount: 0
+    dockerImage: docker_image0
+    resourcePerInstance:
+      gpu: 1
+      cpu: 6
+      memoryMB: 62500
+    commands:
+      - export HF_HOME=/mnt/confignfs/usercache/liumingxuan/huggingface
+      - export TRANSFORMERS_CACHE=/mnt/confignfs/usercache/liumingxuan/huggingface
+      - export HF_DATASETS_CACHE=/mnt/confignfs/usercache/liumingxuan/huggingface/datasets
+      - export CUDA_VISIBLE_DEVICES=0
+      - cd /workspace/open-unlearning
+      - python src/train.py --config-name=edit.yaml experiment=edit/zsre/default task_name=pai_rome_zsre model.model_args.pretrained_model_name_or_path=/mnt/confignfs/userdata/liumingxuan/models/Qwen2.5-7B-Instruct model.tokenizer_args.pretrained_model_name_or_path=/mnt/confignfs/userdata/liumingxuan/models/Qwen2.5-7B-Instruct
+      - echo "=== Job Finished ==="
+
+defaults:
+  virtualCluster: default
+
+extras:
+  com.microsoft.pai.runtimeplugin:
+    - plugin: ssh
+      parameters:
+        jobssh: true
+        userssh:
+          type: custom
+          value: >-
+            ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC0XD7JEZGiJbJe4vSAaiCOFmAQsVz0FVfKTbifZDNZzOrGC/JavH6cT8JNinNt2JT4UFmDO1yA7pSXx6tcv21rOztIGkdOeU4xU4Q+Id3zbKq6LWDpJ/NoofoiQaHqJmQSkkZSkqSdYfj1o+Dj0S/Uht6asOzv8+BMPa8YASgYaAbf/H52rJRwUUCQwXe8KCYhFhIkoZzt/5Odz7No1vjbukwRQoPlZLZf5VLLH5JWOXI0BaYD1ubvV+hSuVl5QvoYLZvrxpWZ0JmaS/DHq5IlciwGTceGX6Utla9Q7FoXTD4/XvphzmY4QhW+oOSaQzOGjxwEdHt4zlAjBk2K+qjesw3cdFv0/XNiQsmeDPJL5wv7p4FOia3guiddgEdoxbne7Cfv9+Ap6ey3tNTFrRDSyxB/fVhfaZeISaJuflEI8HeomEuqb39Qn0oXPNbRrf0+GI9qU1ylWUIvFvnPQx7xf6BCw0CEPaYda8NSaod64SVNI+2Vc5swhQWJnTG5E9mMhJ0bViQOU48yP43vRZVts5HZyWlil/k0EayinHkyyTkhbVHYPxG4UpIzA6jQv3tdfX5c56cTuuKEZqxdXxHD+jq4SKNBTyraNrMFuK2xl18NQx2kKu6lTSIrF2+RrRi8Gu7gbaOfCDh4zsJS+x/24MU9REaB+7P8C4UKaD1Sbw== happy-yan
+    - plugin: teamwise_storage
+      parameters:
+        storageConfigNames:
+          - usercache
+          - userdata
+
+hivedScheduler:
+  taskRoles:
+    taskrole:
+      skuNum: 1
+      skuType: gpu-machine-3090

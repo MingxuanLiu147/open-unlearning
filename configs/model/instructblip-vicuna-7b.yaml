@@ -1,0 +1,7 @@
+model_family: instructblip
+model_path: Salesforce/instructblip-vicuna-7b
+processor_path: Salesforce/instructblip-vicuna-7b
+torch_dtype: float16
+
+lora:
+  enabled: false

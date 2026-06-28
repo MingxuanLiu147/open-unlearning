@@ -1,0 +1,10 @@
+model_family: llava
+model_path: llava-hf/llava-1.5-7b-hf
+processor_path: llava-hf/llava-1.5-7b-hf
+torch_dtype: bfloat16
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 16
+  dropout: 0.05

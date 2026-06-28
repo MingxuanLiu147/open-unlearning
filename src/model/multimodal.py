@@ -1,7 +1,11 @@
 """多模态模型加载模块（sidecar，不修改现有 model/__init__.py）。
 
 提供 get_mm_model()，返回 (model, processor)。
-支持 Qwen2VL / Qwen2.5VL / Qwen3VL 系列，不依赖 qwen_vl_utils。
+支持 AutoModelForImageTextToText 兼容的多模态模型，包括：
+- Qwen2-VL / Qwen2.5-VL / Qwen3-VL
+- LLaVA-1.5 / LLaVA-Next / LLaVA-OneVision
+- InternVL2.5
+- BLIP-2 / InstructBLIP（受限支持：processor 无 chat template）
 """
 
 import logging

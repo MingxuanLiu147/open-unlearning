@@ -170,7 +170,7 @@ class MENDEditor(EditTrainer):
 
         # 构造编辑输入
         prompt = f"{request.prompt} {request.target_new}"
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        inputs = tokenizer(prompt, return_tensors="pt").to(self._input_device())
 
         # 前向传播
         model.train()

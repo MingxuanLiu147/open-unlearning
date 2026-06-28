@@ -44,6 +44,7 @@ function groupLabel(g: string): string {
 
 onMounted(load)
 watch(() => store.mode, () => { store.selectedDatasets = {}; load() })
+watch(() => store.datasetListVersion, () => { load() })
 </script>
 
 <style scoped>
