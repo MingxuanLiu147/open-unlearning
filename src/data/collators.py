@@ -44,6 +44,14 @@ class DataCollatorForSupervisedDataset(object):
             ).flip(dims=[1])
         return input_ids
 
+    def _stack_optional_scalar(self, instances, key: str):
+        if key not in instances[0]:
+            return None
+        values = [instance[key] for instance in instances]
+        if key == "sample_weight":
+            return torch.tensor(values, dtype=torch.float32)
+        return torch.tensor(values, dtype=torch.long)
+
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
         """将若干条样本打包为一个 batch。
 
@@ -72,6 +80,15 @@ class DataCollatorForSupervisedDataset(object):
                 # labels 的 padding 使用 IGNORE_INDEX，以免影响损失
                 labels = self._pad_tokens(labels, IGNORE_INDEX)
                 return_dct.update({"labels": labels})
+            for scalar_key in (
+                "prompt_length",
+                "response_start",
+                "train_target_span",
+                "sample_weight",
+            ):
+                scalar_value = self._stack_optional_scalar(instances, scalar_key)
+                if scalar_value is not None:
+                    return_dct.update({scalar_key: scalar_value})
             if self.index:
                 # 如果需要把 index 一并 collate 出来（如样本追踪）
                 if self.index in instances[0]:
@@ -86,3 +103,19 @@ class DataCollatorForSupervisedDataset(object):
                     # 仅做 Warning，不直接中断训练
                     raise Warning(f"{self.index} not found in dataset")
         return return_dct
+
+
+class DataCollatorForReFTDataset(DataCollatorForSupervisedDataset):
+    """为 ReFT 训练补充最后一个 prompt token 的 intervention 位置。"""
+
+    def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
+        batch = super().__call__(instances)
+        if "input_ids" in batch and "prompt_length" in batch:
+            prompt_lengths = torch.clamp(batch["prompt_length"] - 1, min=0)
+            batch["unit_locations"] = {
+                "sources->base": (
+                    None,
+                    [[[int(position.item())]] for position in prompt_lengths],
+                )
+            }
+        return batch

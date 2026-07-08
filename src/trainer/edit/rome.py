@@ -117,8 +117,8 @@ class ROMEEditor(EditTrainer):
         model = self.model
         tokenizer = self.tokenizer
 
-        # 编辑第一个指定的层
-        layer_idx = self.layers[0] if self.layers else 5
+        # 编辑第一个可用层；若配置层超出模型深度则自动回退。
+        layer_idx = self._resolve_layer_indices(self.layers)[0]
 
         # 获取模型架构信息
         layer_module = self._get_layer_module(model, layer_idx)
@@ -168,7 +168,7 @@ class ROMEEditor(EditTrainer):
         model = self.model
 
         # Tokenize 并定位 subject
-        inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+        inputs = tokenizer(prompt, return_tensors="pt").to(self._input_device())
         subject_tokens = tokenizer(subject, add_special_tokens=False)["input_ids"]
 
         # 找到 subject 在 prompt 中的位置
@@ -185,27 +185,23 @@ class ROMEEditor(EditTrainer):
         else:
             subject_end = subject_start + len(subject_tokens) - 1
 
-        # 获取隐藏状态
-        hidden_states = []
+        captured = []
 
-        def hook_fn(module, input, output):
-            if isinstance(output, tuple):
-                hidden_states.append(output[0])
-            else:
-                hidden_states.append(output)
+        def hook_fn(module, inp, output):
+            x = inp[0] if isinstance(inp, tuple) else inp
+            captured.append(x)
 
-        # 注册 hook 获取指定层的输出
         layer = self._get_layer_module(model, layer_idx)
-        handle = layer.register_forward_hook(hook_fn)
+        mlp_proj = self._get_mlp_projection(layer)
+        hook_target = mlp_proj if mlp_proj is not None else layer
+        handle = hook_target.register_forward_hook(hook_fn)
 
         with torch.no_grad():
             model(**inputs)
 
         handle.remove()
 
-        # 提取 subject 最后一个 token 位置的隐藏状态
-        key = hidden_states[0][0, subject_end, :].clone()
-
+        key = captured[0][0, subject_end, :].clone()
         return key
 
     def _compute_value_vector(
@@ -230,7 +226,7 @@ class ROMEEditor(EditTrainer):
         """
         model = self.model
         tokenizer = self.tokenizer
-        device = next(model.parameters()).device
+        device = self._input_device()
 
         # 准备输入和目标
         prompt = request.prompt
@@ -249,9 +245,9 @@ class ROMEEditor(EditTrainer):
             raise ValueError(f"Cannot find MLP projection in layer {layer_idx}")
 
         hidden_size = mlp_proj.weight.shape[0]
+        layer_device = mlp_proj.weight.device
 
-        # 初始化 delta（要添加到 MLP 输出的扰动）
-        delta = torch.zeros(hidden_size, device=device, requires_grad=True)
+        delta = torch.zeros(hidden_size, device=layer_device, dtype=torch.float32, requires_grad=True)
 
         # 获取原始模型的输出分布（用于 KL 约束）
         with torch.no_grad():
@@ -268,13 +264,11 @@ class ROMEEditor(EditTrainer):
             # 使用 hook 注入 delta 到 MLP 输出
             def create_hook(delta_vec, target_pos):
                 def hook_fn(module, input, output):
-                    # output shape: (batch, seq_len, hidden_size)
                     if isinstance(output, tuple):
                         hidden = output[0]
                     else:
                         hidden = output
-                    # 在最后一个位置添加 delta
-                    hidden[:, target_pos, :] = hidden[:, target_pos, :] + delta_vec
+                    hidden[:, target_pos, :] = hidden[:, target_pos, :] + delta_vec.to(hidden.dtype)
                     if isinstance(output, tuple):
                         return (hidden,) + output[1:]
                     return hidden
@@ -326,11 +320,10 @@ class ROMEEditor(EditTrainer):
                 )
 
         # 计算最终的 value 向量
-        # value = current_output + delta，其中 current_output = W @ key
         with torch.no_grad():
             weight = mlp_proj.weight
-            current_output = weight @ key
-            value = current_output + delta
+            current_output = weight @ key.to(weight.device).to(weight.dtype)
+            value = current_output + delta.to(weight.device)
 
         return value.detach()
 

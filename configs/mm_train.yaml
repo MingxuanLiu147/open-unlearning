@@ -1,0 +1,9 @@
+defaults:
+  - model: Qwen3-VL-4B
+  - data: mllmu
+  - trainer: MMGradAscent
+  - _self_
+
+device: cuda
+require_cuda: true
+output_dir: saves/mm_unlearn/${trainer.handler}/${now:%Y-%m-%d_%H-%M-%S}

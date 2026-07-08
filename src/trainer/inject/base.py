@@ -49,7 +49,7 @@ class InjectTrainer(FinetuneTrainer):
         self.adapter_name = adapter_name
         super().__init__(*args, **kwargs)
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         """计算标准的 causal language modeling 损失
 
         Args:

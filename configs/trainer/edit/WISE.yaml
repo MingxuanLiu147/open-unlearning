@@ -1,0 +1,20 @@
+# WISE: Knowledge Memory for Lifelong Model Editing
+# Paper: https://arxiv.org/abs/2405.14768
+
+defaults:
+  - edit/base_editor@_here_
+  - _self_
+
+handler: WISEEditor
+
+method_args:
+  layers: [9]
+  inner_params: "model.layers.9.mlp.down_proj"
+  edit_lr: 1.0e-1
+  n_iter: 40
+  eps: 5.0e-4
+  num_pert: 5
+  merge_strategy: "slerp"
+  merge_freq: 5
+  max_edits_per_group: 10
+  merge_alpha: 0.5

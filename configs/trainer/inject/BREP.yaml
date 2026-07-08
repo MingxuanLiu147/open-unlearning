@@ -1,0 +1,18 @@
+# BREP 注入配置
+
+defaults:
+  - inject/base_inject@_here_
+  - _self_
+
+handler: BREPTrainer
+
+args:
+  do_eval: false
+  remove_unused_columns: false
+
+method_args:
+  op_position: ffn_down
+  layer_type: all
+  exclude_layers: []
+  prefix: -1
+  use_weighted_loss: true

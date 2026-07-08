@@ -1,3 +1,9 @@
+"""隐私相关指标实现。
+
+这些指标通常不直接读取原始样本，而是基于前置指标结果或参考日志，
+比较 forget / retain 两侧的统计差异，用于衡量遗忘质量或泄漏程度。
+"""
+
 import numpy as np
 from scipy.stats import ks_2samp
 from evals.metrics.base import unlearning_metric, logger
@@ -15,6 +21,7 @@ def ks_test(model, **kwargs):
     )
     reference_logs = kwargs.get("reference_logs", None)
     if reference_logs:
+        # retain 模型日志作为参考分布，用于和当前 forget 分布做 KS 检验。
         reference_logs = reference_logs["retain_model_logs"]
         retain_tr_stats = np.array(
             [
@@ -47,6 +54,7 @@ def privleak(model, **kwargs):
             f"retain_model_logs evals not provided for privleak, using default retain auc of {kwargs['ref_value']}"
         )
         ref = kwargs["ref_value"]
+    # MUSE 基准把 AUC 记成 1-x，这里先转换回同一语义后再比较相对差异。
     score = 1 - score
     ref = 1 - ref
     return {"agg_value": (score - ref) / (ref + 1e-10) * 100}

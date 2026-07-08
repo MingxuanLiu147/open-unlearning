@@ -1,0 +1,21 @@
+# Multimodal Knowledge Editing 入口配置
+# 支持 MM-IKE, MM-GRACE, MM-WISE, MM-MEND, MM-SERAC
+
+defaults:
+  - model: Qwen2-VL
+  - trainer: edit/MM_GRACE
+  - data: mm_edit
+  - eval: mm_edit
+  - hydra: default
+  - paths: default
+  - experiment: null
+  - _self_
+
+mode: edit
+
+task_name: ???
+
+edit_type: single  # single | batch | sequential
+max_edits: null
+save_edit_summary: true
+save_edited_model: true

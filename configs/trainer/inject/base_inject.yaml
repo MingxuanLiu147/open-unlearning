@@ -4,7 +4,7 @@
 handler: InjectTrainer
 
 args:
-  output_dir: saves/inject/${now:%Y-%m-%d_%H-%M-%S}
+  output_dir: ${paths.output_dir}
   do_train: true
   do_eval: true
   seed: 42
@@ -26,7 +26,7 @@ args:
   logging_steps: 10
   save_steps: 500
   save_total_limit: 3
-  evaluation_strategy: steps
+  eval_strategy: 'no'
   eval_steps: 500
 
 method_args: {}

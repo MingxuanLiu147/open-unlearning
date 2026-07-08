@@ -33,12 +33,30 @@ from trainer.inject.base import InjectTrainer
 from trainer.inject.lora import LoRATrainer
 from trainer.inject.dora import DoRATrainer
 from trainer.inject.adalora import AdaLoRATrainer
+from trainer.inject.loreft import LoReFTTrainer
+from trainer.inject.brep import BREPTrainer
 
 # Knowledge Editing 训练器
 from trainer.edit.base import EditTrainer
 from trainer.edit.rome import ROMEEditor
 from trainer.edit.memit import MEMITEditor
 from trainer.edit.mend import MENDEditor
+from trainer.edit.alphaedit import AlphaEditEditor
+from trainer.edit.unke_editor import UNKEEditor
+from trainer.edit.grace import GRACEEditor
+from trainer.edit.wise import WISEEditor
+from trainer.edit.ike import IKEEditor
+from trainer.edit.serac import SERACEditor
+from trainer.edit.malmen import MALMENEditor
+from trainer.edit.instructedit import InstructEditEditor
+from trainer.edit.anyedit import AnyEditEditor
+
+# Multimodal Knowledge Editing 训练器
+from trainer.edit.mm_ike import MMIKEEditor
+from trainer.edit.mm_grace import MMGRACEEditor
+from trainer.edit.mm_wise import MMWISEEditor
+from trainer.edit.mm_mend import MMMENDEditor
+from trainer.edit.mm_serac import MMSERACEditor
 
 
 import logging
@@ -135,9 +153,27 @@ _register_trainer(InjectTrainer)
 _register_trainer(LoRATrainer)
 _register_trainer(DoRATrainer)
 _register_trainer(AdaLoRATrainer)
+_register_trainer(LoReFTTrainer)
+_register_trainer(BREPTrainer)
 
 # Register Knowledge Editing Trainer
 _register_trainer(EditTrainer)
 _register_trainer(ROMEEditor)
 _register_trainer(MEMITEditor)
 _register_trainer(MENDEditor)
+_register_trainer(AlphaEditEditor)
+_register_trainer(UNKEEditor)
+_register_trainer(GRACEEditor)
+_register_trainer(WISEEditor)
+_register_trainer(IKEEditor)
+_register_trainer(SERACEditor)
+_register_trainer(MALMENEditor)
+_register_trainer(InstructEditEditor)
+_register_trainer(AnyEditEditor)
+
+# Register Multimodal Knowledge Editing Trainer
+_register_trainer(MMIKEEditor)
+_register_trainer(MMGRACEEditor)
+_register_trainer(MMWISEEditor)
+_register_trainer(MMMENDEditor)
+_register_trainer(MMSERACEditor)

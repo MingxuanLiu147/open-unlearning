@@ -1,0 +1,18 @@
+# Alpaca BREP 微调实验配置
+
+defaults:
+  - override /model: Llama-3.2-1B-Instruct
+  - override /trainer: inject/BREP
+  - override /data: inject
+  - override /eval: inject
+
+trainer:
+  args:
+    num_train_epochs: 1
+    per_device_train_batch_size: 2
+    gradient_accumulation_steps: 1
+    learning_rate: 2e-4
+  method_args:
+    op_position: ffn_down
+    layer_type: all
+    prefix: -1

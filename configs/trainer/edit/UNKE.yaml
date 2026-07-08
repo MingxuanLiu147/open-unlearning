@@ -1,0 +1,24 @@
+# UNKE: Unstructured Knowledge Editing
+# Paper: https://arxiv.org/abs/2405.15349
+
+defaults:
+  - edit/base_editor@_here_
+  - _self_
+
+handler: UNKEEditor
+
+method_args:
+  layers: [4, 5, 6, 7, 8]
+  v_lr: 0.5
+  v_num_grad_steps: 20
+  v_weight_decay: 0.5
+  v_loss_layer: 31
+  clamp_norm_factor: 4.0
+  ft_lr: 1.0e-5
+  ft_epochs: 5
+  weight_decay_factor: 0.1
+  max_weight_deviation: 0.1
+  rewrite_module_tmp: "model.layers.{}.mlp.down_proj"
+  layer_module_tmp: "model.layers.{}"
+  lm_head_module: "lm_head"
+  ln_f_module: "model.norm"

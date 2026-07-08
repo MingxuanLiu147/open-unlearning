@@ -1,0 +1,20 @@
+benchmark: mllmu
+data_dir: data/MLLMU-Bench
+forget_split_ratio: 5
+output_dir: saves/mm_eval/mllmu
+tasks:
+  - classification
+  - fill_in_the_blank
+  - generation
+splits:
+  - forget
+  - retain_shared
+  - retain_celebrity
+  - test
+test_data_dir: data/MLLMU-Bench/Test_Set
+retain_celebrity_data: data/MLLMU-Bench/Retain_Set/train-00000-of-00001.parquet
+few_shot_parquet: data/MLLMU-Bench/Full_Set/train-00000-of-00001.parquet
+shot_num: zero_shot
+max_records: null
+max_new_tokens: 50
+generation_max_new_tokens: 200

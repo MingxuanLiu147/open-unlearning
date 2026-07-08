@@ -21,13 +21,22 @@ Unlearning 训练主入口
         retain_split=retain90
 """
 
+import logging
+
 import hydra
 from omegaconf import DictConfig
 from data import get_data, get_collators
 from model import get_model
 from trainer import load_trainer
+from trainer.edit.pipeline import (
+    build_edit_requests,
+    execute_edit_requests,
+    save_edit_artifacts,
+)
 from evals import get_evaluators
 from trainer.utils import seed_everything
+
+logger = logging.getLogger(__name__)
 
 
 @hydra.main(version_base=None, config_path="../configs", config_name="train.yaml")
@@ -56,8 +65,9 @@ def main(cfg: DictConfig):
     
     # ==================== 步骤2: 加载模型配置 ====================
     # mode 决定数据加载方式：
-    #   - "train": 普通训练，按 split 返回数据
+    #   - "train"/"finetune"/"inject"/"edit": 直接按 split 返回数据
     #   - "unlearn": 遗忘训练，将 forget/retain 合并为 ForgetRetainDataset
+    #   - "edit": 知识编辑，按 data.edit 加载原始编辑数据
     mode = cfg.get("mode", "train")
     
     model_cfg = cfg.model
@@ -74,7 +84,7 @@ def main(cfg: DictConfig):
     # ==================== 步骤3: 加载数据集 ====================
     data_cfg = cfg.data
     # get_data 根据 mode 返回不同格式的数据：
-    #   - mode="train": {"forget": Dataset, "retain": Dataset, "eval": Dataset}
+    #   - mode="train"/"finetune"/"inject"/"edit": {"train": Dataset, "eval": Dataset, ...}
     #   - mode="unlearn": {"train": ForgetRetainDataset, "eval": Dataset}
     #     其中 ForgetRetainDataset 每次返回 {"forget": sample, "retain": sample}
     data = get_data(
@@ -100,7 +110,7 @@ def main(cfg: DictConfig):
     # 常见评估指标：ROUGE、概率差异、模型效用等
     evaluators = None
     eval_cfgs = cfg.get("eval", None)
-    if eval_cfgs:
+    if eval_cfgs and mode != "edit":
         evaluators = get_evaluators(
             eval_cfgs=eval_cfgs,
             template_args=template_args,
@@ -121,6 +131,29 @@ def main(cfg: DictConfig):
         evaluators=evaluators,                   # 评估器列表
         template_args=template_args,
     )
+
+    if mode == "edit":
+        edit_requests = build_edit_requests(
+            data.get("edit", None), max_edits=cfg.get("max_edits", None)
+        )
+        edit_summary = execute_edit_requests(
+            trainer=trainer,
+            requests=edit_requests,
+            edit_type=cfg.get("edit_type", "single"),
+        )
+
+        if cfg.get("save_edit_summary", True):
+            save_edit_artifacts(trainer_args.output_dir, edit_requests, edit_summary)
+
+        if cfg.get("save_edited_model", True):
+            trainer.save_model(trainer_args.output_dir)
+
+        if trainer_args.do_eval:
+            logger.warning(
+                "Inline edit evaluation is not enabled in `src/train.py` yet. "
+                "Use `src/eval.py` to evaluate the edited checkpoint."
+            )
+        return
 
     # ==================== 步骤8: 执行训练 ====================
     if trainer_args.do_train:

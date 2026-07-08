@@ -1,3 +1,14 @@
+"""指标系统的基础抽象。
+
+这里定义了 ``UnlearningMetric`` 统一封装：
+- 数据集与 collator 的按需加载
+- pre_compute 前置指标的递归执行
+- 参考日志的加载
+- 指标结果缓存
+
+同时提供 ``unlearning_metric`` 装饰器，便于把普通函数包装成统一的指标对象。
+"""
+
 import os
 import json
 import logging
@@ -8,6 +19,8 @@ logger = logging.getLogger("metrics")
 
 
 class UnlearningMetric:
+    """统一的指标封装类，屏蔽不同指标之间的调用差异。"""
+
     def __init__(
         self,
         name: str,
@@ -40,9 +53,11 @@ class UnlearningMetric:
         return collators
 
     def set_pre_compute_metrics(self, metrics: Dict[str, Callable]):
+        """记录当前指标依赖的前置指标。"""
         self.pre_compute_metrics.update(metrics)
 
     def evaluate_metric(self, model, metric_name, **kwargs):
+        """在参数准备完成后，真正调用底层指标函数。"""
         logger.info(f"Evaluating {metric_name}")
         results = self._metric_fn(model, **kwargs)
         return results
@@ -82,6 +97,7 @@ class UnlearningMetric:
         for pre_metric_name, pre_metric_cfg in pre_compute_cfgs.items():
             access_name = pre_metric_cfg.get("access_key", pre_metric_name)
             _results = {}
+            # 前置指标往往计算代价较高，因此优先复用缓存，避免重复前向。
             if pre_metric_name in cache:
                 logger.info(
                     f"Skipping {metric_name}'s precompute {pre_metric_name}, already evaluated."
@@ -116,6 +132,7 @@ class UnlearningMetric:
             reference_logs[reference_log_name] = {}
             for key, include_cfg in include_cfgs.items():
                 access_name = include_cfg.get("access_key", key)
+                # 允许配置层为导入的参考指标结果重新命名，方便下游访问。
                 _results = _logs.get(key, None)
                 reference_logs[reference_log_name][access_name] = _results
                 if _results is None:
@@ -151,8 +168,10 @@ class UnlearningMetric:
         return f"{type(self).__name__} {self.name}"
 
 
-# decorator that wraps simple user-defined metric python functions into callable UnlearningMetric objects
+# 这个装饰器把普通的 Python 指标函数包装成统一的 UnlearningMetric 对象。
 class unlearning_metric:
+    """将普通函数包装为 ``UnlearningMetric`` 的轻量装饰器。"""
+
     def __init__(self, name: str):
         self.name = name
 

@@ -34,6 +34,9 @@ class EditRequest:
         target_old: 原始目标输出（可选）
         locality_inputs: 局部性测试输入（可选）
         portability_inputs: 可移植性测试输入（可选）
+        image: 多模态编辑图像（PIL.Image 或路径，可选）
+        image_rephrase: 改写图像（多模态泛化评估用，可选）
+        multimodal_locality_inputs: 多模态局部性测试输入（可选）
     """
 
     prompt: str
@@ -42,6 +45,9 @@ class EditRequest:
     target_old: Optional[str] = None
     locality_inputs: Optional[List[Dict[str, str]]] = None
     portability_inputs: Optional[List[Dict[str, str]]] = None
+    image: Optional[Any] = None
+    image_rephrase: Optional[Any] = None
+    multimodal_locality_inputs: Optional[Dict[str, Any]] = None
 
 
 class EditTrainer(FinetuneTrainer):
@@ -132,6 +138,21 @@ class EditTrainer(FinetuneTrainer):
 
         return (loss, outputs) if return_outputs else loss
 
+    def _input_device(self, model: Optional[nn.Module] = None) -> torch.device:
+        """Return the device that model inputs (token ids) should be placed on.
+
+        For multi-GPU models with ``device_map``, the embedding layer may be on
+        a different device than other layers.  This helper finds the correct one.
+        """
+        model = model or self.model
+        for attr in ("model.embed_tokens", "transformer.wte", "gpt_neox.embed_in"):
+            try:
+                emb = self._get_module_by_name(model, attr)
+                return next(emb.parameters()).device
+            except (AttributeError, LookupError, StopIteration, IndexError, KeyError):
+                continue
+        return next(model.parameters()).device
+
     def _get_module_by_name(self, model: nn.Module, name: str) -> nn.Module:
         """根据名称获取模型子模块
 
@@ -150,6 +171,42 @@ class EditTrainer(FinetuneTrainer):
             else:
                 module = getattr(module, part)
         return module
+
+    def _get_layers_container(self, model: Optional[nn.Module] = None):
+        """获取模型的主干层容器。"""
+        model = model or self.model
+        for attr_name in ["model.layers", "transformer.h", "gpt_neox.layers"]:
+            try:
+                return self._get_module_by_name(model, attr_name)
+            except (AttributeError, IndexError, KeyError):
+                continue
+        return None
+
+    def _resolve_layer_indices(self, requested_layers: Optional[List[int]] = None) -> List[int]:
+        """根据模型实际深度解析可用的编辑层。
+
+        若请求层超出模型深度，则自动回退到最后一层，保证小模型联通验证可运行。
+        """
+        requested_layers = requested_layers or self.layers
+        layers = self._get_layers_container(self.model)
+        if layers is None:
+            raise ValueError("Cannot find transformer layers in model")
+
+        total_layers = len(layers)
+        valid_layers = [
+            layer_idx for layer_idx in requested_layers if 0 <= layer_idx < total_layers
+        ]
+        if valid_layers:
+            return valid_layers
+
+        fallback_layer = total_layers - 1
+        logger.warning(
+            "Requested edit layers %s exceed model depth %d; falling back to layer %d",
+            requested_layers,
+            total_layers,
+            fallback_layer,
+        )
+        return [fallback_layer]
 
     def _set_module_by_name(self, model: nn.Module, name: str, new_module: nn.Module):
         """根据名称设置模型子模块

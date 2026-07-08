@@ -2,7 +2,8 @@
 # Low-Rank Adaptation
 
 defaults:
-  - base_inject
+  - inject/base_inject@_here_
+  - _self_
 
 handler: LoRATrainer
 

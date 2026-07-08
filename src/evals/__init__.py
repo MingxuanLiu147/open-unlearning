@@ -105,6 +105,17 @@ _register_evaluator(EditLocalityEvaluator)
 _register_evaluator(EditPortabilityEvaluator)
 _register_evaluator(EditComprehensiveEvaluator)
 
+# Register Multimodal Editing evaluators
+from evals.mm_edit import (
+    MMEditReliabilityEvaluator,
+    MMEditGeneralizationEvaluator,
+    MMEditLocalityEvaluator,
+)
+
+_register_evaluator(MMEditReliabilityEvaluator)
+_register_evaluator(MMEditGeneralizationEvaluator)
+_register_evaluator(MMEditLocalityEvaluator)
+
 # Register Knowledge Injection evaluators
 _register_evaluator(InjectEvaluator)
 _register_evaluator(InjectAccuracyEvaluator)

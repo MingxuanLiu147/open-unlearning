@@ -2,7 +2,8 @@
 # Mass-Editing Memory in Transformer
 
 defaults:
-  - base_editor
+  - edit/base_editor@_here_
+  - _self_
 
 handler: MEMITEditor
 

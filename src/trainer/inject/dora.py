@@ -58,7 +58,11 @@ class DoRATrainer(InjectTrainer):
         self.r = r
         self.lora_alpha = lora_alpha
         self.lora_dropout = lora_dropout
-        self.target_modules = target_modules or ["q_proj", "v_proj", "k_proj", "o_proj"]
+        self.target_modules = (
+            list(target_modules)
+            if target_modules
+            else ["q_proj", "v_proj", "k_proj", "o_proj"]
+        )
         self.use_dora = use_dora
         self.bias = bias
         self.task_type = task_type
@@ -102,7 +106,7 @@ class DoRATrainer(InjectTrainer):
             logger.error("peft library not installed. Please run: pip install peft")
             raise
 
-    def compute_loss(self, model, inputs, return_outputs=False):
+    def compute_loss(self, model, inputs, return_outputs=False, **kwargs):
         """计算 DoRA 微调损失"""
         outputs = model(
             input_ids=inputs["input_ids"],
